@@ -6,8 +6,8 @@ DOS_SRC_DIR = G:\LAB1
 DOS_AS = E:\ASM51.EXE
 DOS_EMILY = E:\EMILY52.EXE
 
-# generate full listing with symbol table
-ASM_FLAGS = -F -S
+# generate full listing with symbol table, no page breaks
+ASM_FLAGS = -F -S P=0
 
 # The DOSBox configuration ensures that the sources files and ASM51/EMILY52 are
 # mounted in a standard location
@@ -22,7 +22,7 @@ default: run
 %.HEX: %.asm
 	@echo Compiling $< ...
 	@$(AS)
-	@if grep -q "\*\* ERROR \*\*" $(@:.HEX=.LST); then rm $@; false; else true; fi
+	@if grep -q "\*\* ERROR \*\*" $(@:.HEX=.LST); then rm -f $@; false; else true; fi
 
 .PHONY: run
 run: P1.HEX
