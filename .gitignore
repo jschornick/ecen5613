@@ -1,2 +1,11 @@
 *.HEX
 *.LST
+**/pld/*.abs
+**/pld/*.doc
+**/pld/*.pdf
+**/pld/*.lst
+**/pld/*.sim
+**/pld/*.so
+**/pld/*.wo
+**/pld/*.jed
+
