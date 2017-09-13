@@ -1,0 +1,83 @@
+Test #1
+-------
+Sample calculation from assignment
+A = 0x2A
+B = 0x07
+
+$20 = 0x2B
+$21 = 0x06
+$22 = 0x01
+$23 = 0x18
+
+$30 = 0x00 (no error)
+
+
+Test #2
+-------
+Addition overflow
+A = 0xFF
+B = 0x07
+
+$30 = 0x01 (sum overflow)
+
+
+Test #3
+-------
+Divide by zero
+A = 0x2A
+B = 0x00
+
+$20 = 0x2B
+$30 = 0x02 (divide by zero)
+
+
+Test #4
+-------
+Multiply overflow from bit 6
+A = 0x46
+B = 0x01
+
+$20 = 0x47
+$21 = 0x47
+$22 = 0x00
+$23 = 0x1C (LSB)
+$30 = 0x03 (multiply overflow)
+
+
+Test #5
+-------
+Multiply overflow from bit 7
+A = 0x85
+B = 0x01
+
+$20 = 0x86
+$21 = 0x86
+$22 = 0x00
+$23 = 0x18 (LSB)
+$30 = 0x03 (multiply overflow)
+
+
+Test #6
+-------
+Large divisor
+A = 0x03
+B = 0x75
+
+$20 = 0x04
+$21 = 0x00
+$22 = 0x04
+$23 = 0x00
+$30 = 0x00 (no error)
+
+
+Test #7
+-------
+Large result
+A = 0xFB
+B = 0x04
+
+$20 = 0xFC
+$21 = 0x3F
+$22 = 0x00
+$23 = 0xFC
+$30 = 0x00 (no error)

@@ -1,0 +1,144 @@
+Annotated listing:
+==================
+
+  CNT = total number of executions
+  CYC = machines cycles for one execution
+  TOT = total machine cycles (i.e., CNT * CYC)
+
+    CNT CYC TOT     OPCODE
+    --- --- ---     ------
+                                    1  ;; File: P1.asm
+                                    2  ;; Author: Jeff Schornick
+                                    3  ;;
+                                    4  ;; ECEN5613 Lab #1, P1
+                                    5  ;;
+                                    6  ;; Calculates the result of the following equation using integer division:
+                                    7  ;;   Z = ((X+1)/Y)*4
+                                    8  ;;
+                                    9  ;; The parameters X and Y should be assigned as follows:
+                                    10  ;;   X (addend) - > A (accumluator)
+                                    11  ;;   Y (divisor) -> B
+                                    12  
+                                    13  ;; Address locations for results / errors
+                                    14  SUM_ADDR:  EQU $20              ; Sum of X+1
+                                    15  QUOT_ADDR: EQU $21              ; Quotient of (X+1)/Y
+                                    16  REM_ADDR:  EQU $22              ; Remainder of (X+1)/Y
+                                    17  Z_ADDR:    EQU $23              ; Result of ((X+1)/Y)*4
+                                    18  ERR_ADDR:  EQU $30              ; Error code
+                                    19  
+                                    20  ; Error codes
+                                    21  NO_ERR:   EQU 00h               ; No error
+                                    22  ERR_ADD:  EQU 01h               ; Overflow on addition
+                                    23  ERR_DIVZ: EQU 02h               ; Division by zero
+                                    24  ERR_MUL:  EQU 03h               ; Overflow on multiplication
+                                    25  
+                                    26  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                                    27  ;; Main program entry point
+                                    28  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                                    29  
+                                    30    ORG $0000
+                                    31  Init:
+      1   1   1     74 2A           32    MOV  A,#08Eh                  ; Addend (X)
+      1   2   2     75 F0 07        33    MOV  B,#00Ch                  ; Divisor (Y)
+      1   2   2     75 30 00        34    MOV  ERR_ADDR,#0              ; Initialize to no error
+                                    35  
+                                    36  ;; Summation sub-calculation of (X+1)
+                                    37  ;; Pre:  X set in ACC
+                                    38  ;; Post: Sum stored at SUM_ADDR, or error on overflow
+                                    39  DoAdd:
+      1   1   1     24 01           40    ADD  A,#1                     ; Perform addition which sets carry on overflow
+      1   1   1     F5 20           41    MOV  SUM_ADDR,A               ; Store result
+      1   2   2     50 04           42    JNC  DoDiv                    ; Continue if no overflow
+                                    43  
+                                    44    ; Overflow occurred
+                    78 01           45    MOV  R0,#ERR_ADD              ; Overflow, set error code
+                    80 25           46    SJMP Error
+                                    47  
+                                    48  ;; Division sub-calculation of (X+1)/Y
+                                    49  ;; Pre:  Divisor set in B, dividend in ACC
+                                    50  ;; Post: Quotent stored in QUOT_ADDR, remainder stored in REM_ADDR,
+                                    51  ;;       or error on divide-by-zero
+                                    52  DoDiv:
+      1   2   2     A9 F0           53    MOV  R1,B                     ; Load divisor into register for comparison
+      1   2   2     B9 00 04        54    CJNE R1,#0,Div2               ; Check if divisor is zero
+                                    55  
+                                    56    ; Divisor was zero
+                    78 02           57    MOV  R0,#ERR_DIVZ             ; Divide by zero error code
+                    80 1C           58    SJMP Error
+                                    59  
+                                    60  ;; Parameters valid, continue with divide
+                                    61  ;; Divisor now set in R1, divident still in ACC
+                                    62  Div2:
+      1   1   1     7A 00           63    MOV  R2,#0                    ; Initialize quotient counter
+      1   1   1     C3              64    CLR  C                        ; Clear carry so it isn't subtracted
+                                    65  DivLoop:
+     12   1  12     99              66    SUBB A,R1                     ; Subtract divisor from current remainder
+     12   1  12     0A              67    INC  R2                       ; Increment quotient
+     12   2  24     50 FC           68    JNC  DivLoop                  ; Continue until we've subtracted too many times
+                                    69  
+                                    70    ; We've subtracted past zero, so add back one to correct
+      1   1   1     29              71    ADD  A,R1                     ; Correct remainder
+      1   1   1     F5 22           72    MOV  REM_ADDR,A               ; Store final remainder result
+      1   1   1     1A              73    DEC  R2                       ; Correct quotient
+      1   2   2     8A 21           74    MOV  QUOT_ADDR,R2             ; Store final quotient result
+                                    75  
+      1   1   1     CA              76    XCH  A,R2                     ; Swap quotient into ACC for next section
+                                    77  
+                                    78  ;; Multiplication calculation of ((X+1)/Y)*4
+                                    79  ;; Pre:  First factor stored in A
+                                    80  ;; Post: Final result stored at Z_ADDR, or error on overflow
+                                    81  DoMul:
+      1   1   1     C3              82    CLR  C
+      1   1   1     33              83    RLC  A                        ; Multiply by 2
+      1   2   2     92 D6           84    MOV  PSW.6,C                  ; Save carry bit of first multiply in alternate-carry
+      1   1   1     C3              85    CLR  C                        ; Clear carry so it doesn't rotate a 1 to bit 0
+      1   1   1     33              86    RLC  A                        ; Multiply by 2 again (4x total)
+      1   2   2     72 D6           87    ORL  C,PSW.6                  ; Set carry if either operation overflowed
+      1   1   1     F5 23           88    MOV  Z_ADDR,A                 ; Store final result
+      1   2   2     50 04           89    JNC  EndLoop
+                                    90  
+                                    91    ; Overflow occured
+                    78 03           92    MOV  R0,#ERR_MUL              ; Overflow, set error code
+                                    93  
+                                    94  ; Generic error handling
+                                    95  ; Pre:  Error code set in R0
+                                    96  ; Post: Error code stored at ERR_ADDR
+                                    97  Error:
+                    88 30           98    MOV  ERR_ADDR,R0
+                                    99  
+                                   100  EndLoop:
+                    80 FE          101  	SJMP EndLoop                  ; Infinite loop
+
+            -----
+              80 total machine cycles for program run
+
+
+Execution time:
+===============
+
+  (80 machine cycles) * (12 oscillations / machine cyle) * (1 microsecond / 11.0592 oscillations)
+
+      = 86.8055555556 microseconds total runtime
+
+
+Total size:
+===========
+
+  Count of all bytes from OPCODE column: 59 bytes
+
+  Alternately, Emily52 shows program memory in locations 0x0000..0x003A.
+  Each location is 1 byte, (0x3A - 0x00 + 1) * (1 byte) = 59 bytes.
+
+
+Notes:
+======
+
+  To count executions in the loop, use the breakpoint counter option in Emily52, run to completion, then view breakpoints.
+
+
+References:
+===========
+
+  Oscillations per machine cycle, C501 User Guide, page 2-4
+  Operation cycle count table, C500 Architecture and Instruction Set, page 4-82
+  Opcode decoding table, C500 Architecture and Instruction Set, page 4-87
