@@ -23,7 +23,7 @@ Device          g16v8a;
  *                 Pins 12..19 are flexible I/O.
  *************************************************************/
 
-Pin [2..5] = [A15..A12];  /* Top 4 bits of the address bus */
+Pin [5..2] = [A15..A12];  /* Top 4 bits of the address bus */
 
 Pin 7 = RD;    /* External data memory read strobe */
 Pin 8 = PSEN;  /* Program store enable (external read strobe) */
