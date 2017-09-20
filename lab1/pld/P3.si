@@ -17,7 +17,7 @@ Device   g16v8a;
 /*                                                              */
 /****************************************************************/
 
-ORDER: A15, A14, A13, A12, %2, CSPERIPH, %8, PSEN, %1, RD, %2, READ; 
+ORDER: A15, A14, A13, A12, %2, nCSPERIPH, %8, nPSEN, %1, nRD, %2, nREAD; 
 
 VECTORS:
 
