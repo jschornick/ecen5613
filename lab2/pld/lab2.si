@@ -1,0 +1,39 @@
+Name     lab1_p3;
+PartNo   XXX;
+Date     XX/XX/XX;
+Revision XXX;
+Designer J. Schornick;
+Company  CU Boulder;
+Assembly XXX;
+Location XXX;
+Device   g16v8a;
+
+/****************************************************************/
+/*                                                              */
+/* ECEN5613 Lab 1, Part 3                                       */
+/*                                                              */
+/* Test vectors to verify external memory read (/READ) and      */
+/* peripheral chip select (/CSPERIPH).                          */
+/*                                                              */
+/****************************************************************/
+
+ORDER: A15, A14, A13, A12, %2, nCSPERIPH, %8, nPSEN, %1, nRD, %2, nREAD; 
+
+VECTORS:
+
+/* Test address decoding (/CSPERIPH) */
+0000 H  X X X
+0001 H  X X X
+0010 H  X X X
+0100 H  X X X
+1000 H  X X X
+1110 H  X X X
+1101 H  X X X
+1011 H  X X X
+1111 L  X X X
+
+/* Test combined read strobe (/READ) */
+XXXX X  0 0 L
+XXXX X  0 1 L
+XXXX X  1 0 L
+XXXX X  1 1 H

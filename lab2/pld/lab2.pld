@@ -1,0 +1,54 @@
+Name            lab1_p3;
+Partno          XXX;
+Revision        XXX;
+Date            XX/XX/XX;
+Designer        J. Schornick;
+Company         CU Boulder;
+Location        XXX;
+Assembly        XXX;
+Device          g16v8a;
+
+/***************************************************************************\
+ *
+ * ECEN5613 Lab 1, Part 3
+ *
+ * Define the logic signals for external memory read (/READ)
+ * and peripheral chip select (/CSPERIPH).
+ *
+\***************************************************************************/
+
+/* INPUTS
+ *
+ * In Simple Mode: Pins 1..9 and 11 are dedicated inputs.
+ *                 Pins 12..19 are flexible I/O.
+ *************************************************************/
+
+Pin [5..2] = [A12..A15];  /* Top 4 bits of the address bus */
+
+Pin 7 = nRD;    /* External data memory read strobe */
+Pin 8 = nPSEN;  /* Program store enable (external read strobe) */
+
+
+/* OUTPUTS
+ *
+ * In Simple Mode: Pins 12..19 are availabe as outputs,
+ *                 if not used for input.
+ *************************************************************/
+
+Pin 12 = nREAD;      /* Read strobe to external memory, program or data. */
+Pin 13 = nCSPERIPH;  /* Chip select peripheral device (active low)       */ 
+
+
+/* LOGIC
+ ***************************************************************************/
+
+/* External data and program memory are combined (overlay mode).
+   Combine the read strobes of the two active-low signals coming
+   from the microcontroller to produce a common active-low.  */
+
+nREAD = nRD & nPSEN;
+
+/* When the 4 most-significant address bits are set, assert the
+   chip select on an external peripheral (active low). */
+
+nCSPERIPH = !([A15..A12]:&);
