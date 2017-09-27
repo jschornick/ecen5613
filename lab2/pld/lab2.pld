@@ -1,4 +1,4 @@
-Name            lab1_p3;
+Name            lab2;
 Partno          XXX;
 Revision        XXX;
 Date            XX/XX/XX;
@@ -10,7 +10,7 @@ Device          g16v8a;
 
 /***************************************************************************\
  *
- * ECEN5613 Lab 1, Part 3
+ * ECEN5613 Lab 2
  *
  * Define the logic signals for external memory read (/READ)
  * and peripheral chip select (/CSPERIPH).
@@ -35,20 +35,21 @@ Pin 8 = nPSEN;  /* Program store enable (external read strobe) */
  *                 if not used for input.
  *************************************************************/
 
-Pin 12 = nREAD;      /* Read strobe to external memory, program or data. */
 Pin 13 = nCSPERIPH;  /* Chip select peripheral device (active low)       */ 
+Pin 15 = nEPROM_OE;  /* Output enable of EPROM (active low) */
 
 
 /* LOGIC
  ***************************************************************************/
 
-/* External data and program memory are combined (overlay mode).
-   Combine the read strobes of the two active-low signals coming
-   from the microcontroller to produce a common active-low.  */
-
-nREAD = nRD & nPSEN;
-
 /* When the 4 most-significant address bits are set, assert the
    chip select on an external peripheral (active low). */
 
 nCSPERIPH = !([A15..A12]:&);
+
+
+/* EPROM should only be driving outputs for address during a
+   an external program read for address range 0x0000..0x7fff */
+
+nEPROM_OE = A15 # nPSEN;
+
