@@ -9,3 +9,7 @@
 **/pld/*.wo
 **/pld/*.jed
 
+**/schematic/*.bak
+**/schematic/*.bck
+**/schematic/*.dcm
+**/schematic/*.kicad_pcb
