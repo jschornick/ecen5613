@@ -25,8 +25,9 @@ Device          g16v8a;
 
 Pin [5..2] = [A12..A15];  /* Top 4 bits of the address bus */
 
-Pin 7 = nRD;    /* External data memory read strobe */
-Pin 8 = nPSEN;  /* Program store enable (external read strobe) */
+Pin 7 = nRD;    /* External data memory read strobe (active low) */
+Pin 8 = nPSEN;  /* Program store enable (external read strobe, active low) */
+Pin 9 = nWR;    /* External data memory write strobe (active low) */
 
 
 /* OUTPUTS
@@ -35,7 +36,8 @@ Pin 8 = nPSEN;  /* Program store enable (external read strobe) */
  *                 if not used for input.
  *************************************************************/
 
-Pin 13 = nCSPERIPH;  /* Chip select peripheral device (active low)       */ 
+Pin 13 = nCSPERIPH;  /* Chip select peripheral device (active low) */ 
+Pin 14 = DEBUG;      /* Debug latch signal (active on rising edge */
 Pin 15 = nEPROM_OE;  /* Output enable of EPROM (active low) */
 
 
@@ -53,3 +55,9 @@ nCSPERIPH = !([A15..A12]:&);
 
 nEPROM_OE = A15 # nPSEN;
 
+
+/* The debug flipflop latches on a rising edge signal. It should only latch
+   for writes to address range 0x0000..0x7ffff, specifically when then /WR
+   goes from low to high. */
+
+DEBUG = A15 # nWR;

@@ -12,28 +12,34 @@ Device   g16v8a;
 /*                                                              */
 /* ECEN5613 Lab 2                                               */
 /*                                                              */
-/* Test vectors to verify EPROM Output Enable (/EPROM_OE) and   */
-/* peripheral chip select (/CSPERIPH).                          */
+/* Test vectors to verify EPROM Output Enable (/EPROM_OE),      */
+/* peripheral chip select (/CSPERIPH), and debug latch (DEBUG)  */
 /*                                                              */
 /****************************************************************/
 
-ORDER: A12, A13, A14, A15, %1, nPSEN, %3, nCSPERIPH, %3, nEPROM_OE; 
+ORDER: A12, A13, A14, A15, %1, nPSEN, %1, nWR, %3, nCSPERIPH, %3, nEPROM_OE, %3, DEBUG; 
 
 VECTORS:
 
 /* Test address decoding (/CSPERIPH) */
-0000 X  H  X
-0001 X  H  H
-0010 X  H  X
-0100 X  H  X
-1000 X  H  X
-1110 X  H  X
-1101 X  H  H
-1011 X  H  H
-1111 X  L  H
+0000 X X   H  X  X
+0001 X X   H  H  H
+0010 X X   H  X  X
+0100 X X   H  X  X
+1000 X X   H  X  X
+1110 X X   H  X  X 
+1101 X X   H  H  H
+1011 X X   H  H  H
+1111 X X   L  H  H
 
 /* Test EPROM Output Enable (/EPROM_OE) */
-XXX0 0  H  L
-XXX0 1  H  H
-XXX1 0  X  H
-XXX1 1  X  H
+XXX0 0 X   H  L  X 
+XXX0 1 X   H  H  X
+XXX1 0 X   X  H  H
+XXX1 1 X   X  H  H
+
+/* Test Debug latch (DEBUG) */
+XXX0 X 0   H  X  L 
+XXX0 X 1   H  X  H
+XXX1 X 0   X  H  H
+XXX1 X 1   X  H  H
