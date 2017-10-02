@@ -12,7 +12,7 @@ Device          g16v8a;
  *
  * ECEN5613 Lab 2
  *
- * Define the logic signals for external memory read (/READ)
+ * Define the logic signals for external program read (/EPROM_OE)
  * and peripheral chip select (/CSPERIPH).
  *
 \***************************************************************************/
@@ -48,8 +48,8 @@ Pin 15 = nEPROM_OE;  /* Output enable of EPROM (active low) */
 nCSPERIPH = !([A15..A12]:&);
 
 
-/* EPROM should only be driving outputs for address during a
-   an external program read for address range 0x0000..0x7fff */
+/* EPROM should only be active (driving outputs) during an external
+   program read, and only for address range 0x0000..0x7fff */
 
 nEPROM_OE = A15 # nPSEN;
 
