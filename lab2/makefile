@@ -35,6 +35,11 @@ led: LED.HEX
 	@echo Simulating $< ...
 	@$(EMILY)
 
+.PHONY: debug
+debug: DEBUG.HEX
+	@echo Simulating $< ...
+	@$(EMILY)
+
 .PHONY: clean
 clean:
 	rm -f *.HEX *.LST
