@@ -1,0 +1,38 @@
+Name     debug;
+PartNo   XXX;
+Date     XX/XX/XX;
+Revision XXX;
+Designer J. Schornick;
+Company  CU Boulder;
+Assembly XXX;
+Location XXX;
+Device   g16v8a;
+
+/****************************************************************/
+/*                                                              */
+/* ECEN5613 Lab 2, supplemental                                 */
+/*                                                              */
+/* Test 4-bit to 7-segment display decoding                     */ 
+/****************************************************************/
+
+ORDER: H3, H2, H1, H0, %1, L6, L5, L4, L3, L2, L1, L0;
+
+VECTORS:
+
+/*   ABCDEFG  */
+0000 HHHHHHL
+0001 HLLHHHH
+0010 XXXXXXX
+0011 HHHHLLH
+0100 XXXXXXX
+0101 XXXXXXX
+0110 XXXXXXX
+0111 XXXXXXX
+1000 LLLLLLL
+1001 XXXXXXX
+1010 XXXXXXX
+1011 XXXXXXX
+1100 XXXXXXX
+1101 XXXXXXX
+1110 XXXXXXX
+1111 XXXXXXX

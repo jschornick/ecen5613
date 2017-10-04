@@ -1,0 +1,73 @@
+Name            debug;
+Partno          XXX;
+Revision        XXX;
+Date            XX/XX/XX;
+Designer        J. Schornick;
+Company         CU Boulder;
+Location        XXX;
+Assembly        XXX;
+Device          g16v8a;
+
+/***************************************************************************\
+ *
+ * ECEN5613 Lab 2, supplemental
+ *
+ * Decode 4-bit hex value for 7-segment display
+ *
+\***************************************************************************/
+
+/* INPUTS
+ *
+ * In Simple Mode: Pins 1..9 and 11 are dedicated inputs.
+ *                 Pins 12..19 are flexible I/O.
+ *************************************************************/
+
+Pin [1..4] = [H0..3];  /* 4-bits representing hex value*/
+
+/* OUTPUTS
+ *
+ * In Simple Mode: Pins 12..19 are availabe as outputs,
+ *                 if not used for input.
+ *
+ *************************************************************/
+
+Pin [12..18] = [L0..6];  /* A - G */
+
+
+/* LOGIC
+ *
+ * Seven segment layout:
+ *    AA
+ *   F  B
+ *    GG
+ *   E  C
+ *    DD
+ *
+ * Display is common anode, so LEDs are active low:
+      0 = on, 1 = off
+ ***************************************************************************/
+
+FIELD hex = [H3..H0];
+FIELD led = [L6..0];  /* G - A */
+
+/*   Binary mapping:
+    X => 'B'ABCDEFG  */
+
+TABLE hex => led {
+    0 => 'B'0000001;
+    1 => 'B'1001111;
+    2 => 'B'0010010;
+    3 => 'B'0000110;
+    4 => 'B'1001100;
+    5 => 'B'0100100;
+    6 => 'B'0100000;
+    7 => 'B'0001111;
+    8 => 'B'0000000;
+    9 => 'B'0000100;
+    A => 'B'0001000; 
+    B => 'B'1100000; 
+    C => 'B'0110001; 
+    D => 'B'1000010; 
+    E => 'B'0110000; 
+    F => 'B'0111000; 
+}
