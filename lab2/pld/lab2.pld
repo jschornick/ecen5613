@@ -13,7 +13,7 @@ Device          g16v8a;
  * ECEN5613 Lab 2
  *
  * Define the logic signals for external program read (/EPROM_OE)
- * and peripheral chip select (/CSPERIPH).
+ * and peripheral chip select (/CSPERIPH), and DEBUG latch.
  *
 \***************************************************************************/
 

@@ -26,6 +26,7 @@ ISR_ITERS:   EQU 40     ; number of ISR iterations before toggling LED (0.4s)
 ;;  - set for ISR (0x80 - 0xFF)
 DBG_MASK:  EQU 080h           ; High bit of debug value
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Memory reservations
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -56,6 +57,7 @@ TMOD_T0_GATED:    EQU 008h      ; Timer 0 gated by INT0
   ORG $0000
 Start:
   AJMP  Init                  ; Jump over ISRs to main routine
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Interrupt Service Routines
@@ -114,8 +116,9 @@ Init:
   MOV   TH0,#TH0_RESET        ; Reload upper 8-bits
   SETB  IE.7                  ; Enable interrupts (EA=1)
   SETB  IE.1                  ; Enable timer 0 overflow interrupts (ET0=1)
-  MOV   DPL,#0                ; Set data pointer to 0x0000 to trigger debug
-  MOV   DPH,#0
+  MOV   DPTR,#0                 ; Set data pointer to 0x0000 to trigger debug
+  MOV   DBG_MAIN,#0           ; Zero Debug counters
+  MOV   DBG_ISR,#0
   SETB  TCON.4                ; Start timer 0 (TR0=1)
 
 
