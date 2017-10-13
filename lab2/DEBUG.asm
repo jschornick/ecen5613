@@ -34,6 +34,7 @@ DBG_MASK:  EQU 080h           ; High bit of debug value
 DBG_MAIN:  EQU $20            ; Main loop debug counter
 DBG_ISR:   EQU $21            ; ISR debug counter
 
+DBG_REG:   EQU $7FFF
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Register definitions
@@ -116,7 +117,7 @@ Init:
   MOV   TH0,#TH0_RESET        ; Reload upper 8-bits
   SETB  IE.7                  ; Enable interrupts (EA=1)
   SETB  IE.1                  ; Enable timer 0 overflow interrupts (ET0=1)
-  MOV   DPTR,#0                 ; Set data pointer to 0x0000 to trigger debug
+  MOV   DPTR,#DBG_REG         ; Set data pointer to debug register address
   MOV   DBG_MAIN,#0           ; Zero Debug counters
   MOV   DBG_ISR,#0
   SETB  TCON.4                ; Start timer 0 (TR0=1)
