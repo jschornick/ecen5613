@@ -1,0 +1,77 @@
+Name            lab3;
+Partno          XXX;
+Revision        XXX;
+Date            XX/XX/XX;
+Designer        J. Schornick;
+Company         CU Boulder;
+Location        XXX;
+Assembly        XXX;
+Device          g16v8a;
+
+/***************************************************************************\
+ *
+ * ECEN5613 Lab 2
+ *
+ * Define the logic signals for peripheral chip select (/CSPERIPH), external 
+ * RAM read/write (/RAM_RD and /RAM_WR), and the DEBUG latch.
+ *
+\***************************************************************************/
+
+/* INPUTS
+ *
+ * In Simple Mode: Pins 1..9 and 11 are dedicated inputs.
+ *                 Pins 12..19 are flexible I/O.
+ *************************************************************/
+
+Pin [5..2] = [A12..A15];  /* Top 4 bits of the address bus */
+
+Pin 7 = nRD;    /* External data memory read strobe (active low) */
+Pin 8 = nPSEN;  /* Program store enable (external read strobe, active low) */
+Pin 9 = nWR;    /* External data memory write strobe (active low) */
+
+
+/* OUTPUTS
+ *
+ * In Simple Mode: Pins 12..19 are availabe as outputs,
+ *                 if not used for input.
+ *************************************************************/
+
+Pin 13 = nCSPERIPH;  /* Chip select peripheral device (active low) */ 
+Pin 14 = DEBUG;      /* Debug latch signal (active on rising edge */
+Pin 15 = nEPROM_OE;  /* Output enable of EPROM (active low) */
+Pin 16 = nRAM_RD;    /* Read of external data RAM (-> /NVRAM_OE) */
+Pin 17 = nRAM_WR;    /* Write of external data RAM (-> /NVRAM_WE) */
+
+
+/* LOGIC
+ ***************************************************************************/
+
+/* When the 4 most-significant address bits are set, assert the
+   chip select on an external peripheral (active low). */
+
+nCSPERIPH = !([A15..A12]:&);
+
+
+/* EPROM should only be active (driving outputs) during an external
+   program read, and only for address range 0x0000..0x7fff */
+
+nEPROM_OE = A15 # nPSEN;
+
+
+/* The debug flipflop latches on a rising edge signal. It should only latch
+   for writes to address range 0x0000..0x7ffff, specifically when then /WR
+   goes from low to high. */
+
+DEBUG = A15 # nWR;
+
+/* The NVRAM is configured to act as additional XRAM, overlapping the internal
+   XARM for address range 0x0000..0x03ff.
+
+   Data reads/writes for 0x0400..0x7FFF should be create active-low signals
+   for the corresponding NVRAM nOE/nWE control inputs.
+
+   Since the AT89C51 doesn't produce nWR or nWR in the internal range, only
+   the high address bit needs to be tested */
+
+nRAM_RD = nRD # A15; 
+nRAM_WR = nWR # A15; 
