@@ -1,4 +1,4 @@
-update=Mon 02 Oct 2017 02:29:51 AM MDT
+update=Wed 11 Oct 2017 02:00:08 AM MDT
 version=1
 last_client=kicad
 [pcbnew]
@@ -59,10 +59,11 @@ LibName27=atmel
 LibName28=contrib
 LibName29=valves
 LibName30=ecen5613_lab-cache
+LibName31=switches
 [schematic_editor]
 version=1
 PageLayoutDescrFile=page_layout.kicad_wks
-PlotDirectoryName=
+PlotDirectoryName=../../lab2/schornick_lab_2/schematic/
 SubpartIdSeparator=0
 SubpartFirstId=65
 NetFmtName=
