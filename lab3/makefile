@@ -19,9 +19,12 @@ EMILY = dosbox -c "$(DOS_EMILY) $(DOS_SRC_DIR)\$<" $(DOSBOX_FLAGS)
 
 FLIP_DIR = /home/jeff/flip.3.2.1/bin
 ISP = $(FLIP_DIR)/isp.sh
-ISPCMD = $(ISP) -device AT89C51RC2 -hardware RS232 -port /dev/ttyS1 -baudrate 115200 -operation LOADBUFFER $(CURDIR)/$< PROGRAM VERIFY
+ISPCMD = $(ISP) -device AT89C51RC2 -hardware RS232 -port /dev/ttyS1 -baudrate ${BAUD_RATE} -operation LOADBUFFER $(CURDIR)/$< PROGRAM VERIFY
+UTIL_DIR = ../util
+SERIAL = /dev/ttyS1
+BAUD_RATE = 115200
 
-default: XRAM.asm
+default: XRAM.HEX
 
 %.HEX: %.asm
 	@echo Compiling $< ...
@@ -33,6 +36,10 @@ default: XRAM.asm
 	@$(EMILY)
 
 %.flash: %.HEX
+	@echo Setting up serial port...
+	stty -F ${SERIAL} ${BAUD_RATE}
+	@$(UTIL_DIR)/prime_bootloader.sh ${SERIAL}
+	@echo
 	@echo Flashing $< ...
 	$(ISPCMD)
 

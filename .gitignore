@@ -1,5 +1,8 @@
 *.HEX
+*.hex
 *.LST
+*.lst
+
 **/pld/*.abs
 **/pld/*.doc
 **/pld/*.pdf
@@ -13,3 +16,5 @@
 **/schematic/*.bck
 **/schematic/*.dcm
 **/schematic/*.kicad_pcb
+
+.#*
