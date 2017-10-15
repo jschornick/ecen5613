@@ -72,7 +72,7 @@
 
 .equ	pgm, 0x2000		;default location for the user program
 .equ	bmem, 0x1000		;where is the beginning of memory
-.equ	emem, 0xFFFF		;end of the memory
+.equ	emem, 0x7FFF		;end of the memory
 
 ; To set the baud rate, use this formula or set to 0 for auto detection
 ; baud_const = 256 - (crystal / (12 * 16 * baud))
@@ -200,6 +200,8 @@
 ; know that you really have to.
 
 .equ	psw_init, 0		;value for psw (which reg bank to use)
+.equ	auxr, 0x8E        ; AT89C51 Auxillary register
+.equ	auxr_init, 0x0C		; Initialization value for AUXR (1024b XRAM)
 .equ	dnld_parm, 0x10		;block of 16 bytes for download
 .equ	stack, 0x30		;location of the stack
 .equ	baud_save, 0x78		;save baud for warm boot, 4 bytes
@@ -1818,6 +1820,7 @@ poweron:
 	mov	ie, a		;all interrupts off
 	mov	ip, a
 	mov	psw, #psw_init
+	mov	auxr, #auxr_init
 	;clear any interrupt status, just in case the user put
 	;"ljmp 0" inside their interrupt service code.
 	acall	intr_return
