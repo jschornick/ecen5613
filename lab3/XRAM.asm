@@ -10,6 +10,9 @@
 ;;    0x0100 .. 0x03FF  Internal NVRAM based on XSR settinh
 ;;    0x0400 .. 0x7FFF  External NVRAM
 
+ISR_BASE:   EQU $2000           ; Paulmon user programs start address
+PROG_BASE:  EQU ISR_BASE+0100h  ; first 256 byte boundary after last ISRs
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Constants
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -60,12 +63,23 @@ TMOD_T0_COUNTER:  EQU 004h      ; Counter mode
 TMOD_T0_NOGATE:   EQU 000h      ; Timer 0 not gated
 TMOD_T0_GATED:    EQU 008h      ; Timer 0 gated by INT0
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Reset / program entry point
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ORG $0000
+  ORG PROG_BASE
+  DB  0A5h,0E5h,0E0h,0A5h
+  DB  35,255,0,0
+  DB  0,0,0,0
+  DB  0,0,0,0
+  DB  0,0,0,0
+  DB  0,0,0,0
+  DB  0,0,0,0
+  DB  255,255,255,255
+  STR 'XRAM'
+  DB  0
+  ORG (PROG_BASE+64)
+
 Start:
   AJMP  Init                  ; Jump over ISRs to main routine
 
@@ -73,21 +87,6 @@ Start:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Interrupt Service Routines
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  ORG $000B
-T0_ISR:
-  ;; NB: TF0 is automatically cleared upon entry
-  SETB  P1.1                  ; ISR status pin high
-  DJNZ  R0,End_T0_ISR         ; Decrement ISR tally and exit if nonzero
-  CPL   P1.2                  ; Toggle LED pin
-  MOV   R0,#ISR_ITERS         ; Reset ISR counter to max value
-
-End_T0_ISR:
-  MOV   TL0,#TL0_RESET        ; Reload lower 8-bits
-  MOV   TH0,#TH0_RESET        ; Reload upper 8-bits
-  CLR   P1.1                  ; ISR status pin low
-  RETI
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Initialization
@@ -189,3 +188,19 @@ Main:
   MOVX  A,@DPTR
 
   AJMP Main
+
+  ORG (ISR_BASE+0Bh)
+T0_ISR:
+;; NB: TF0 is automatically cleared upon entry
+  SETB  P1.1                  ; ISR status pin high
+  DJNZ  R0,End_T0_ISR         ; Decrement ISR tally and exit if nonzero
+  CPL   P1.2                  ; Toggle LED pin
+  MOV   R0,#ISR_ITERS         ; Reset ISR counter to max value
+
+End_T0_ISR:
+  MOV   TL0,#TL0_RESET        ; Reload lower 8-bits
+  MOV   TH0,#TH0_RESET        ; Reload upper 8-bits
+  CLR   P1.1                  ; ISR status pin low
+  RETI
+
+
