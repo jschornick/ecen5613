@@ -2,6 +2,14 @@
 *.hex
 *.LST
 *.lst
+*.map
+*.mem
+*.sym
+
+*.rel
+*.rst
+*.ihx
+*.lk
 
 **/pld/*.abs
 **/pld/*.doc
