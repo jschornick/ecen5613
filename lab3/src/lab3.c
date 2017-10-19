@@ -141,6 +141,21 @@ void dump_buffer(uint16_t buf_num, uint16_t count)
   printf("\r\n");
 }
 
+void dump_buffer_hex(uint16_t buf_num, uint16_t count)
+{
+  uint16_t i;
+  printf("\r\nBuffer #%u\r\n", buf_num);
+  printf("----------");
+  for(i=0; i<count; i++) {
+    if ((i & 0xf) == 0) {
+      printf("\r\n");
+      printf("%04x:", (uint16_t) buffer[buf_num] + i);
+    }
+    printf(" %02x", *(buffer[buf_num] + i));
+  }
+  printf("\r\n");
+}
+
 void cmd_report()
 {
   uint16_t i;
@@ -203,7 +218,10 @@ void cmd_del()
 {}
 
 void cmd_show()
-{}
+{
+  dump_buffer_hex(0, stored_capitals);
+  dump_buffer_hex(1, stored_numbers);
+}
 
 void display_menu(void)
 {
