@@ -4,9 +4,13 @@
 # Primary makefile for ECEN5613 Lab 3
 #
 
+SRC_DIR = src
 UTIL_DIR = ../util
 
-# The DOSBox configuration ensures that the sources files and ASM51/EMILY52 are
+# DOSBox configuration for Emily52
+##################################
+
+# The DOSBox conf file ensures that the sources files and ASM51/EMILY52 are
 # mounted in a standard location
 DOSBOX_FLAGS = -c exit -conf $(UTIL_DIR)/dosbox.conf >/dev/null
 DOS_SRC_DIR = G:\LAB3
@@ -19,12 +23,14 @@ ASM51 = dosbox -c "$(DOS_AS) $(DOS_SRC_DIR)\$< $(ASM51_FLAGS)" $(DOSBOX_FLAGS)
 # generate full listing with symbol table, no page breaks, Intel hex
 ASM51_FLAGS = -I -F -S P=0
 
+
 # Alternate, non-DOS assembler
+# TODO: convert sources that need this to sdas and remove as31 rules
 AS31 = as31
 AS31_FLAGS = -l
 
 
-# ISP 
+# ISP
 ###########
 
 # The Atmel BatchISP utility is used for flashing the AT89C51
@@ -35,58 +41,116 @@ SERIAL = /dev/ttyS1
 BAUD_RATE = 115200
 
 
+# Project settings
+##################
+
+# Primary target name
+NAME = lab3
+
+# Select code and link options to work with Paulmon
+#PAULMON = yes
+PM_HEADER_ADDR = 0x2000  # NB: must be on 256 byte boundary
+PM_PROG_START  = 0x2040  # HEADER_ADDR + 0x40
+PM_PROG_SIZE   = 0x5FC0  # (XRAM size) - PROG_START
+
+# Variables default to __xdata (i.e. XRAM)
+MEMMODEL = large
+
+# Override default heap size, in bytes
+HEAP_SIZE = 3000
+
+
 # C settings
-###########
+############
 
 CC = sdcc
-MEMMODEL=large
 
-CFLAGS = -mmcs51 --model-$(MEMMODEL) --std-sdcc99
+CPPFLAGS = -Iinclude
 
-# No Paulmon
-#LFLAGS = --model-$(MEMMODEL) --code-loc 0x3000 --code-size=5000
+ifdef PAULMON
+  CPPFLAGS += -DPAULMON
+  CPPFLAGS += -DPM_HEADER_ADDR=$(PM_HEADER_ADDR)
+endif
 
-# Paulmon at 0x0000
-# TODO: configure this via a macro
-LFLAGS = --model-$(MEMMODEL) --code-loc 0x2000 --code-size 6000 --xram-loc 0x0000 --xram-size 0x8000
+ifdef HEAP_SIZE
+  CPPFLAGS += -DHEAP_SIZE=$(HEAP_SIZE)
+endif
+
+# Target procoessor architecture (8051)
+ARCH = mcs51
+
+CFLAGS = -m$(ARCH) --model-$(MEMMODEL)
+CFLAGS += --Werror --verbose
+
+# Use C99 standard with SDCC extensions
+CFLAGS += --std-sdcc99
+
+
+# Linker settigns
+#################
+
+LFLAGS = --model-$(MEMMODEL)
+
+# 32k external ram (internal XRAM + NVRAM)
+# 256b of internal ram (128b direct 128b indirect)
+LFLAGS += --xram-loc 0x0000 --xram-size 0x8000 --iram-size 0x0100
+
+ifdef PAULMON
+  # Paulmon at 0x0000 - 0x1FFF, program at 0x2000
+  LFLAGS += --code-loc $(PM_PROG_START) --code-size $(PM_PROG_SIZE)
+else
+  # Program at 0x0000
+  LFLAGS += --code-loc 0x0000 --code-size 0x8000
+endif
 
 
 # Files
 ###########
 
-C_SRCS = lab3.c
+# File with main() must be first due to how linkage works
+C_SRCS = lab3.c heap.c serial.c
+
 ASM_GEN = $(C_SRCS:.c=.asm)
 OBJS = $(C_SRCS:.c=.rel)
-
-IHEX=$(@:.hex=.ihx)
 
 
 # Rules
 ###########
 
-default: lab3.hex
+default: $(NAME).hex
 
 %.HEX: %.asm
 	@echo Compiling $< with ASM51 ...
 	@$(ASM51)
 	@if grep -q "\*\* ERROR \*\*" $(@:.HEX=.LST); then rm -f $@; false; else true; fi
 
+# Convert 32-byte ihex to 16-byte for flashing
+%.hex: %.ihx
+	packihx $< >$@
+
 %.hex: %.asm
 	@echo Compiling $< with as31 ...
 	@$(AS31) $(AS31_FLAGS) $<
 
-%.asm: %.c
-	$(CC) $(CFLAGS) -S $<
-
+# Precompile only
 %.i: %.c
-	$(CC) $(CFLAGS) -E $< -o $@
+	$(CC) $(CPPFLAGS) -E $< -o $@
 
-%.rel: %.c
-	$(CC) $(CFLAGS) -c $<
+# Compile to assembly only
+%.asm: %.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -S $<
 
-lab3.hex: $(OBJS)
-	$(CC) $(LFLAGS) $^ -o $(IHEX)
-	packihx $(IHEX) > $@
+# Compile but do not link
+%.rel: $(SRC_DIR)/%.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+# Compile from asm, don't link
+%.rel: $(SRC_DIR)/%.asm
+	sdas8051 -losg $<
+
+# Link and relocate into a single hex file
+lab3.ihx: $(OBJS)
+	$(CC) $(LFLAGS) $^ -o $@
 
 %.sim: %.hex
 	@echo Simulating $< ...
@@ -99,6 +163,13 @@ lab3.hex: $(OBJS)
 	@echo
 	@echo Flashing $< ...
 	@$(ISPCMD)
+
+.PHONY: flash
+flash: $(NAME).flash
+
+.PHONY: simulate
+simulate: $(NAME).hex
+	s51 -k 8080 $<
 
 .PHONY: clean
 clean:

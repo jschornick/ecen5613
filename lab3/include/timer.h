@@ -3,6 +3,9 @@
 //
 // Additional register definitions for 8051 timers
 
+#ifndef __TIMER_H
+#define __TIMER_H
+
 #include <8052.h>
 
 // or use tmod bits from 8051.h...
@@ -42,3 +45,5 @@
 #define T2CON_RCLK  T2CON_5
 #define T2CON_EXF2  T2CON_6
 #define T2CON_TF2   T2CON_7
+
+#endif /* __TIMER_H */
