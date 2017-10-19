@@ -5,18 +5,16 @@
 #
 
 SRC_DIR = src
+SDCC_DIR = $(HOME)/sdcc-3.6.0
 UTIL_DIR = ../util
 
-# DOSBox configuration for Emily52
-##################################
+# ASM51: DOSBox configuration
+#############################
 
-# The DOSBox conf file ensures that the sources files and ASM51/EMILY52 are
+# The DOSBox conf file ensures that the sources files and ASM51 are
 # mounted in a standard location
 DOSBOX_FLAGS = -c exit -conf $(UTIL_DIR)/dosbox.conf >/dev/null
 DOS_SRC_DIR = G:\LAB3
-
-DOS_EMILY = E:\EMILY52.EXE
-EMILY = dosbox -c "$(DOS_EMILY) $(DOS_SRC_DIR)\$<" $(DOSBOX_FLAGS)
 
 DOS_AS = E:\ASM51.EXE
 ASM51 = dosbox -c "$(DOS_AS) $(DOS_SRC_DIR)\$< $(ASM51_FLAGS)" $(DOSBOX_FLAGS)
@@ -63,7 +61,7 @@ HEAP_SIZE = 3000
 # C settings
 ############
 
-CC = sdcc
+CC = $(SDCC_DIR)/bin/sdcc
 
 CPPFLAGS = -Iinclude
 
@@ -103,6 +101,10 @@ else
   LFLAGS += --code-loc 0x0000 --code-size 0x8000
 endif
 
+# Simulator
+###########
+
+S51 = $(SDCC_DIR)/bin/s51
 
 # Files
 ###########
@@ -152,10 +154,6 @@ default: $(NAME).hex
 lab3.ihx: $(OBJS)
 	$(CC) $(LFLAGS) $^ -o $@
 
-%.sim: %.hex
-	@echo Simulating $< ...
-	$(EMILY)
-
 %.flash: %.hex
 	@echo Setting up serial port...
 	stty -F ${SERIAL} ${BAUD_RATE}
@@ -169,7 +167,8 @@ flash: $(NAME).flash
 
 .PHONY: simulate
 simulate: $(NAME).hex
-	s51 -k 8080 $<
+	@echo Starting simulator, telnet to port 8080 to connect...
+	$(S51) -k 8080 $<
 
 .PHONY: clean
 clean:
