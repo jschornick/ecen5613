@@ -28,6 +28,14 @@
 // and the smallest allowed buffer sizes.
 #define MAX_BUFFERS ( (HEAP_SIZE - (2 * MAIN_BUF_MIN)) / NEW_BUF_MIN )
 
+extern __xdata char __sdcc_heap;
+
+// Array of buffer pointers to track all possible buffers
+__xdata void * __xdata buffer[MAX_BUFFERS] = {0};
+// Also track all buffer sizes
+__xdata uint16_t buffer_size[MAX_BUFFERS] = {0};
+uint16_t next_buffer = 0;
+
 // Need printf with hexadecimal field width support
 //#define printf printf_fast
 #define printf printf
@@ -43,40 +51,81 @@ __code __at (PM_NAME_ADDR) char paulmon_name[] = "Lab #3";
 #endif /* PAULMON */
 
 
-// TODO: convert to read_range?
-uint16_t read_uint16()
+
+uint8_t new_buffer(uint16_t buf_size)
+{
+  buffer[next_buffer] = malloc(buf_size);
+  if( buffer[next_buffer] == NULL ) {
+    return 0;
+  }
+  buffer_size[next_buffer] = buf_size;
+  next_buffer++;
+  return 1;
+}
+
+uint16_t read_size(uint16_t min, uint16_t max)
 {
   uint16_t val = 0;
   uint16_t new_val;
   char c;
 
-  while(1) {
-    c = getchar();
-    if (c == '\r') {
-      break;
-    }
-    if ( (c >= '0') && (c <= '9') ) {
-      putchar(c);
-      new_val = (val*10) + (c - '0');
-      if( new_val < val ) {
-        return 0xFFFF; // input overflow, return max
+  while ((val < min) || (val > max)) {
+    printf("\n\rEnter buffer size in bytes (%u-%u): ", min, max);
+    while( (c = getchar()) != '\r' ) {
+      if ( (c >= '0') && (c <= '9') ) {
+        putchar(c);
+        new_val = (val*10) + (c - '0');
+        // check for overflow
+        if( new_val < val ) {
+          val =  0xFFFF;
+          break;
+        }
+        val = new_val;
       }
-      val = new_val;
+    }
+    // Received EOL, verify value
+    if (val < min) {
+      printf("Buffer size is too small!\r\n");
+      val = 0;
+    } else if (val > max) {
+      printf("Buffer size is too large!\r\n");
+      val = 0;
     }
   }
-  printf("\r\n");
   return val;
 }
 
 
-extern __xdata char __sdcc_heap;
+void init_storage_buffers(void)
+{
+  uint16_t buf_size;
+  //printf("\n\rCreating primary buffers...\r\n");
+  buf_size = read_size(MAIN_BUF_MIN, MAIN_BUF_MAX);
+  if( buf_size & 0xF ) {
+    printf("Buffer size must be divisible by 16!\r\n");
+    return;
+  }
 
-// Array of buffer pointers to track all possible buffers
-__xdata void * __xdata buffer[MAX_BUFFERS] = {0};
-__xdata uint16_t buffer_size[MAX_BUFFERS] = {0};
-uint16_t next_buffer = 0;
+  printf("Selected buffer size is: %u\r\n", buf_size);
 
-void print_buffer_stats()
+  new_buffer(buf_size);
+  if( buffer[0] == NULL ) {
+    printf("\r\nUnable to allocate storage buffer 0 with size %u!\r\n", buf_size);
+    return;
+  }
+
+  new_buffer(buf_size);
+  if( buffer[1] == NULL ) {
+    printf("\r\nUnable to allocate two storage buffers with size %u!\r\n", buf_size);
+    free(buffer[0]);
+    next_buffer = 0;
+    return;
+  }
+
+  printf("\r\nPrimary buffers (0 and 1) successfully allocated.\r\n");
+}
+
+void cmd_report()
 {
   uint16_t i;
 
@@ -102,18 +151,68 @@ void print_buffer_stats()
 }
 
 
-uint8_t new_buffer(uint16_t buf_size)
-{
-  buffer[next_buffer] = malloc(buf_size);
-  if( buffer[next_buffer] == NULL ) {
-    printf("\r\nCouldn't allocate buffer %u!\r\n", next_buffer);
-    return 0;
+void cmd_add(void) {
+  uint16_t buf_size;
+  printf("\n\rEnter a buffer size in bytes (%u-%u): ", NEW_BUF_MIN, NEW_BUF_MAX);
+  buf_size = read_size(NEW_BUF_MIN, NEW_BUF_MAX);
+  if( (buf_size < NEW_BUF_MIN) || (buf_size > NEW_BUF_MAX) ) {
+    printf("Buffer size %u is out of range!\r\n", buf_size);
+  } else if( !new_buffer(buf_size) ) {
+    printf("Unable to allocate buffer of %u bytes.", buf_size);
+  } else {
+    printf("Added new buffer # %u, size %u bytes at address 0x%04x.", next_buffer-1, buf_size, buffer[next_buffer-1]);
   }
-  buffer_size[next_buffer] = buf_size;
-  next_buffer++;
-  return 1;
 }
 
+void cmd_reset()
+{
+  uint16_t i;
+  printf("Freeing all buffers...");
+  for(i = 0; i<next_buffer; i++) {
+    if (buffer[i] != 0) {
+      free(buffer[i]);
+      buffer[i] = 0;
+    }
+  }
+  next_buffer = 0;
+}
+
+void cmd_del()
+{}
+
+void cmd_show()
+{}
+
+#define KEY_ADD    '+'
+#define KEY_DEL    '-'
+#define KEY_REPORT '?'
+#define KEY_SHOW   '='
+#define KEY_RESET  '@'
+
+void display_menu(void)
+{
+  printf("\r\n=== BufferMaster 3000 Menu ===\r\n\r\n");
+  printf("  %c - Add a new buffer\r\n", KEY_ADD);
+  printf("  %c - Delete a buffer\r\n", KEY_DEL);
+  printf("  %c - Buffer report and storage clear\r\n", KEY_REPORT);
+  printf("  %c - Storage buffer contents\r\n", KEY_SHOW);
+  printf("  %c - Reset all buffers\n", KEY_RESET);
+  printf("\r\n  Otherwise, press capital letters or numbers to store.\r\n");
+  printf("-> ");
+
+}
+
+void store_key(char c)
+{
+  if ((c >= 'A') && (c <= 'Z')) {
+    printf("Storing capital...");
+  } else if ((c>= '0') && (c <= '9')) {
+    printf("Storing number...");
+  }
+}
+
+uint16_t stored_upper = 0;
+uint16_t stored_number = 0;
 
 void main()
 {
@@ -122,60 +221,49 @@ void main()
 
   serial_init();
 
-  printf("\n\rWelcome to Lab #3!\n\r");
-
-  printf("\n\rHEAP_SIZE = %u bytes\n\r", HEAP_SIZE);
-
-  // Initialize all buffer pointers to NULL
-  //memset(buffer, 0, MAX_BUFFERS * sizeof(*buffer) );
-
-  while( !buffer[1] ) {
-    buf_size = 0;
-    while( buf_size == 0 ) {
-      printf("\n\rEnter a buffer size in bytes (%u-%u), divisible by 16: ", MAIN_BUF_MIN, MAIN_BUF_MAX);
-      buf_size = read_uint16();
-      if( (buf_size < MAIN_BUF_MIN) || (buf_size > MAIN_BUF_MAX) ) {
-        printf("Buffer size %u out of range!\r\n", buf_size);
-        buf_size = 0;
-      }
-      if( buf_size & 0xF ) {
-        printf("Buffer size must be divisible by 16!\r\n");
-        buf_size = 0;
-      }
-    }
-
-    printf("Main buffer size is: %u\r\n", buf_size);
-
-    buffer[0] = malloc(buf_size);
-    if( buffer[0] == NULL ) {
-      printf("\r\nCouldn't allocate buffer 0!\r\n");
-      continue;
-    }
-    buffer_size[0] = buf_size;
-
-    buffer[1] = malloc(buf_size);
-    if( buffer[1] == NULL ) {
-      printf("\r\nCouldn't allocate buffer 1!\r\n");
-      free(buffer[0]);
-      buffer[0] = 0;
-    }
-    buffer_size[1] = buf_size;
-    next_buffer = 2;
-  }
-
-  printf("\r\nPrimary buffers (0 and 1) successfully allocated\r\n");
-
-  print_buffer_stats();
+  printf("\r\n");
+  printf("---------------------------------\n\r");
+  printf("| Welcome to BufferMaster 3000! |\r\n");
+  printf("---------------------------------\r\n");
+  printf("\r\n");
+  printf("Built on %s (%s)\r\n", BUILD_DATE, GIT_COMMIT);
+  printf("Compiled with heap size %u bytes\n\r", HEAP_SIZE);
+  printf("\r\n");
 
   while(1) {
-    c = getchar();
-    if(c == '+') {
-      printf("\n\rEnter a buffer size in bytes (%u-%u): ", NEW_BUF_MIN, NEW_BUF_MAX);
-      buf_size = read_uint16();
-      new_buffer(buf_size);
+    while (!next_buffer) {
+      init_storage_buffers();
+      if (next_buffer) {
+        display_menu();
+      }
     }
-    if(c == '?') {
-      print_buffer_stats();
+
+    c = getchar();
+    putchar(c);
+
+    switch(c) {
+    case KEY_ADD:
+      cmd_add();
+      display_menu();
+      break;
+    case KEY_DEL:
+      cmd_del();
+      display_menu();
+      break;
+    case KEY_REPORT:
+      cmd_report();
+      display_menu();
+      break;
+    case KEY_SHOW:
+      cmd_show();
+      display_menu();
+      break;
+    case KEY_RESET:
+      cmd_reset();
+      break;
+    default:
+      store_key(c);
+      break;
     }
   }
 

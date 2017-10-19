@@ -8,6 +8,9 @@ SRC_DIR = src
 SDCC_DIR = $(HOME)/sdcc-3.6.0
 UTIL_DIR = ../util
 
+GIT_COMMIT = $(shell git log --pretty=format:'%h' -n 1; git diff-index --quiet HEAD || echo +)
+BUILD_DATE = $(shell date)
+
 # ASM51: DOSBox configuration
 #############################
 
@@ -73,6 +76,9 @@ endif
 ifdef HEAP_SIZE
   CPPFLAGS += -DHEAP_SIZE=$(HEAP_SIZE)
 endif
+
+CPPFLAGS += -DGIT_COMMIT=\"$(GIT_COMMIT)\"
+CPPFLAGS += -DBUILD_DATE="\"$(BUILD_DATE)\""
 
 # Target procoessor architecture (8051)
 ARCH = mcs51
