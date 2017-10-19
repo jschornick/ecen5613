@@ -28,7 +28,9 @@
 // and the smallest allowed buffer sizes.
 #define MAX_BUFFERS ( (HEAP_SIZE - (2 * MAIN_BUF_MIN)) / NEW_BUF_MIN )
 
-#define printf printf_tiny
+// Need printf with hexadecimal field width support
+//#define printf printf_fast
+#define printf printf
 
 #ifdef PAULMON
 __code __at (PM_HEADER_ADDR) uint8_t paulmon_header[] = {
@@ -66,18 +68,66 @@ uint16_t read_uint16()
   return val;
 }
 
+
+extern __xdata char __sdcc_heap;
+
+// Array of buffer pointers to track all possible buffers
+__xdata void * __xdata buffer[MAX_BUFFERS] = {0};
+__xdata uint16_t buffer_size[MAX_BUFFERS] = {0};
+uint16_t next_buffer = 0;
+
+void print_buffer_stats()
+{
+  uint16_t i;
+
+  printf("\n\rHeap and buffer statistics\n\r");
+  printf("--------------------------\n\r");
+  printf("\n\rHeap size : %u bytes\n\r", HEAP_SIZE);
+  printf("Heap start: 0x%04x\n\r", __sdcc_heap);
+  printf("Heap end  : 0x%04x\n\r", __sdcc_heap + HEAP_SIZE - 1);
+
+  printf("\r\n Buffer # |  Size |  Start |    End |  Chars |  Free");
+  printf("\r\n----------+-------+--------+--------+--------+-------\r\n");
+  for(i = 0; i<MAX_BUFFERS; i++) {
+    if (buffer[i] != 0) {
+      printf("      %3u | %5u | 0x%04x | 0x%04x |  %5u | %5u\r\n", i, buffer_size[i], (uint16_t) buffer[i], (uint16_t)buffer[i] + buffer_size[i] - 1, 0, 0);
+    }
+  }
+
+  printf("\r\nStorage characters since last report: \r\n");
+
+  printf("\r\nStored characters:\r\n");
+
+  // empty buffers
+}
+
+
+uint8_t new_buffer(uint16_t buf_size)
+{
+  buffer[next_buffer] = malloc(buf_size);
+  if( buffer[next_buffer] == NULL ) {
+    printf("\r\nCouldn't allocate buffer %u!\r\n", next_buffer);
+    return 0;
+  }
+  buffer_size[next_buffer] = buf_size;
+  next_buffer++;
+  return 1;
+}
+
+
 void main()
 {
   uint16_t buf_size = 0;
-
-  // Array of buffer pointers to track all possible buffers
-  __xdata char * buffer[MAX_BUFFERS];
+  char c;
 
   serial_init();
 
   printf("\n\rWelcome to Lab #3!\n\r");
 
   printf("\n\rHEAP_SIZE = %u bytes\n\r", HEAP_SIZE);
+
+  // Initialize all buffer pointers to NULL
+  //memset(buffer, 0, MAX_BUFFERS * sizeof(*buffer) );
 
   while( !buffer[1] ) {
     buf_size = 0;
@@ -96,24 +146,37 @@ void main()
 
     printf("Main buffer size is: %u\r\n", buf_size);
 
-    // Initialize all buffer pointers to NULL
-    memset(buffer, 0, MAX_BUFFERS * sizeof(*buffer) );
-
     buffer[0] = malloc(buf_size);
     if( buffer[0] == NULL ) {
       printf("\r\nCouldn't allocate buffer 0!\r\n");
       continue;
     }
+    buffer_size[0] = buf_size;
+
     buffer[1] = malloc(buf_size);
     if( buffer[1] == NULL ) {
       printf("\r\nCouldn't allocate buffer 1!\r\n");
+      free(buffer[0]);
+      buffer[0] = 0;
     }
-    free(buffer[0]);
-    buffer[0] = 0;
+    buffer_size[1] = buf_size;
+    next_buffer = 2;
   }
 
-  printf("\r\nHorray!\r\n");
+  printf("\r\nPrimary buffers (0 and 1) successfully allocated\r\n");
 
-  while(1);
+  print_buffer_stats();
+
+  while(1) {
+    c = getchar();
+    if(c == '+') {
+      printf("\n\rEnter a buffer size in bytes (%u-%u): ", NEW_BUF_MIN, NEW_BUF_MAX);
+      buf_size = read_uint16();
+      new_buffer(buf_size);
+    }
+    if(c == '?') {
+      print_buffer_stats();
+    }
+  }
 
 }

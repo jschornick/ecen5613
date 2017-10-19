@@ -10,9 +10,9 @@
 
 
 // Define a default heap size if not overridden at compile time (see makefile).
-//#ifndef HEAP_SIZE
-//#define HEAP_SIZE 1024
-//#endif
+#ifndef HEAP_SIZE
+#define HEAP_SIZE 1024
+#endif
 
 // Reserve heap space in XRAM, and globally define the heap start address
 __xdata char __sdcc_heap[HEAP_SIZE];
