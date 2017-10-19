@@ -17,9 +17,18 @@
 #include <stdint.h>
 #include "serial.h"
 
+// Command key definitions
+#define KEY_ADD    '+'
+#define KEY_DEL    '-'
+#define KEY_REPORT '?'
+#define KEY_SHOW   '='
+#define KEY_RESET  '@'
+
+// Define the valid size range for storage buffers
 #define MAIN_BUF_MIN 32
 #define MAIN_BUF_MAX 2800
 
+// Define the valid size range for additional buffers
 #define NEW_BUF_MIN 20
 #define NEW_BUF_MAX 400
 
@@ -27,21 +36,24 @@
 // and the smallest allowed buffer sizes.
 #define MAX_BUFFERS ( (HEAP_SIZE - (2 * MAIN_BUF_MIN)) / NEW_BUF_MIN )
 
+// SDCC's heap pointer, linked from heap.c
 extern __xdata char __sdcc_heap[];
 
-// Arrays to track buffer pointers and sizes
-__xdata void * __xdata buffer[MAX_BUFFERS];
+// Arrays to track all buffer pointers and sizes
+__xdata char * buffer[MAX_BUFFERS];
 __xdata uint16_t buffer_size[MAX_BUFFERS];
 
-uint16_t next_buffer;    // Number of the next buffer to create
-uint16_t stored_caps;    // Count of stored capital characters
-uint16_t stored_number;  // Count of stored numeric characters
+uint16_t next_buffer;     // Number of the next buffer to create
+uint16_t stored_capitals; // Count of stored capital characters
+uint16_t stored_numbers;  // Count of stored numeric characters
+uint16_t total_chars;     // Count of all characters received between reports
 
-// Need printf with hexadecimal field width support
-//#define printf printf_fast
+// Use a printf with hexadecimal field width support
 #define printf printf
 
 
+// Attempt to dynamically create a new buffer of the specified size.
+// Returns 1 on success, 0 if allocation fails.
 uint8_t new_buffer(uint16_t buf_size)
 {
   buffer[next_buffer] = malloc(buf_size);
@@ -115,6 +127,20 @@ void init_storage_buffers(void)
   printf("\r\nStorage buffers (0 and 1) successfully allocated with %u bytes each.\r\n", buf_size);
 }
 
+void dump_buffer(uint16_t buf_num, uint16_t count)
+{
+  uint16_t i;
+  printf("\r\nBuffer #%u\r\n", buf_num);
+  printf("----------");
+  for(i=0; i<count; i++) {
+    if ((i & 0x3f) == 0) {
+      printf("\r\n");
+    }
+    printf("%c", *(buffer[buf_num] + i));
+  }
+  printf("\r\n");
+}
+
 void cmd_report()
 {
   uint16_t i;
@@ -126,19 +152,25 @@ void cmd_report()
   printf("  Heap end  : 0x%04x\n\r", (uint16_t) __sdcc_heap + HEAP_SIZE - 1);
   //printf("Next ptr  : 0x%04x\n\r", *(uint16_t *) __sdcc_heap);
 
-  printf("\r\n Buffer # |  Size |  Start |    End |  Chars |  Free");
-  printf("\r\n----------+-------+--------+--------+--------+-------\r\n");
-  for(i = 0; i<MAX_BUFFERS; i++) {
+  printf("\r\n Buffer # |  Size |  Start |    End | Chars |  Free");
+  printf("\r\n----------+-------+--------+--------+-------+-------\r\n");
+  printf("        0 | %5u | 0x%04x | 0x%04x | %5u | %5u\r\n", buffer_size[0], (uint16_t) buffer[0], (uint16_t)buffer[0] + buffer_size[0] - 1, stored_capitals, buffer_size[0] - stored_capitals);
+  printf("        1 | %5u | 0x%04x | 0x%04x | %5u | %5u\r\n", buffer_size[1], (uint16_t) buffer[1], (uint16_t)buffer[1] + buffer_size[1] - 1, stored_numbers, buffer_size[1] - stored_numbers);
+  for(i = 2; i<MAX_BUFFERS; i++) {
     if (buffer[i] != 0) {
-      printf("      %3u | %5u | 0x%04x | 0x%04x |  %5u | %5u\r\n", i, buffer_size[i], (uint16_t) buffer[i], (uint16_t)buffer[i] + buffer_size[i] - 1, 0, 0);
+      printf("      %3u | %5u | 0x%04x | 0x%04x |     0 | %5u\r\n", i, buffer_size[i], (uint16_t) buffer[i], (uint16_t)buffer[i] + buffer_size[i] - 1, buffer_size[i]);
     }
   }
 
-  printf("\r\nStorage characters since last report: \r\n");
+  printf("\r\nTotal characters received since last report: %u \r\n", total_chars);
 
-  printf("\r\nStored characters:\r\n");
+  dump_buffer(0, stored_capitals);
+  dump_buffer(1, stored_numbers);
 
-  // empty buffers
+  total_chars = 0;
+  stored_capitals = 0;
+  stored_numbers = 0;
+
 }
 
 
@@ -173,12 +205,6 @@ void cmd_del()
 void cmd_show()
 {}
 
-#define KEY_ADD    '+'
-#define KEY_DEL    '-'
-#define KEY_REPORT '?'
-#define KEY_SHOW   '='
-#define KEY_RESET  '@'
-
 void display_menu(void)
 {
   printf("\r\n=== BufferMaster 3000 Menu ===\r\n\r\n");
@@ -195,9 +221,15 @@ void display_menu(void)
 void store_key(char c)
 {
   if ((c >= 'A') && (c <= 'Z')) {
-    printf("Storing capital...");
+    if(stored_capitals < buffer_size[0]) {
+      *(buffer[0] + stored_capitals) = c;
+      stored_capitals++;
+    }
   } else if ((c>= '0') && (c <= '9')) {
-    printf("Storing number...");
+    if(stored_numbers < buffer_size[1]) {
+      *(buffer[1] + stored_numbers) = c;
+      stored_numbers++;
+    }
   }
 }
 
@@ -205,8 +237,9 @@ void main()
 {
   char c;
   next_buffer = 0;
-  stored_caps = 0;
-  stored_number = 0;
+  stored_capitals = 0;
+  stored_numbers = 0;
+  total_chars = 0;
 
   memset(buffer, 0, sizeof(__xdata void *));
   //memset(buffer_size, 0, sizeof(uint16_t));
@@ -233,6 +266,7 @@ void main()
     }
 
     c = getchar();
+    total_chars++;
     putchar(c);
 
     switch(c) {
