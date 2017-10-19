@@ -9,7 +9,6 @@
 #include "timer.h"
 #include "serial.h"
 
-// TODO: ifdef PAULMON
 void serial_init() {
 
   // Enable baud rate doubler

@@ -49,7 +49,7 @@ BAUD_RATE = 115200
 NAME = lab3
 
 # Select code and link options to work with Paulmon
-#PAULMON = yes
+PAULMON = yes
 PM_HEADER_ADDR = 0x2000  # NB: must be on 256 byte boundary
 PM_PROG_START  = 0x2040  # HEADER_ADDR + 0x40
 PM_PROG_SIZE   = 0x5FC0  # (XRAM size) - PROG_START
@@ -116,7 +116,7 @@ S51 = $(SDCC_DIR)/bin/s51
 ###########
 
 # File with main() must be first due to how linkage works
-C_SRCS = lab3.c heap.c serial.c
+C_SRCS = lab3.c heap.c serial.c startup.c
 
 ASM_GEN = $(C_SRCS:.c=.asm)
 OBJS = $(C_SRCS:.c=.rel)
