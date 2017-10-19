@@ -13,7 +13,6 @@
 #include <at89c51ed2.h>
 #include <stdio.h>  // printf_tiny
 #include <stdlib.h> // malloc
-#include <string.h> // memset
 #include <stdint.h>
 #include "serial.h"
 #include "paulmon.h"
@@ -28,7 +27,7 @@
 // and the smallest allowed buffer sizes.
 #define MAX_BUFFERS ( (HEAP_SIZE - (2 * MAIN_BUF_MIN)) / NEW_BUF_MIN )
 
-extern __xdata char __sdcc_heap;
+extern __xdata char __sdcc_heap[];
 
 // Array of buffer pointers to track all possible buffers
 __xdata void * __xdata buffer[MAX_BUFFERS] = {0};
@@ -106,7 +105,7 @@ void init_storage_buffers(void)
     return;
   }
 
-  printf("Selected buffer size is: %u\r\n", buf_size);
+  //printf("Selected buffer size is: %u\r\n", buf_size);
 
   new_buffer(buf_size);
   if( buffer[0] == NULL ) {
@@ -122,7 +121,7 @@ void init_storage_buffers(void)
     return;
   }
 
-  printf("\r\nPrimary buffers (0 and 1) successfully allocated.\r\n");
+  printf("\r\nPrimary buffers (0 and 1) successfully allocated with %u bytes.\r\n", buf_size);
 }
 
 void cmd_report()
@@ -132,8 +131,9 @@ void cmd_report()
   printf("\n\rHeap and buffer statistics\n\r");
   printf("--------------------------\n\r");
   printf("\n\rHeap size : %u bytes\n\r", HEAP_SIZE);
-  printf("Heap start: 0x%04x\n\r", __sdcc_heap);
-  printf("Heap end  : 0x%04x\n\r", __sdcc_heap + HEAP_SIZE - 1);
+  printf("Heap start: 0x%04x\n\r", (uint16_t) __sdcc_heap);
+  printf("Heap end  : 0x%04x\n\r", (uint16_t) __sdcc_heap + HEAP_SIZE - 1);
+  //printf("Next ptr  : 0x%04x\n\r", *(uint16_t *) __sdcc_heap);
 
   printf("\r\n Buffer # |  Size |  Start |    End |  Chars |  Free");
   printf("\r\n----------+-------+--------+--------+--------+-------\r\n");
