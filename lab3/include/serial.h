@@ -5,13 +5,16 @@
 //
 // Compilation: Supports SDCC v3.5+, see included makefile for invocation
 // Version    : See GitHub repository jschornick/ecen5613 for revision details
+//
+// Register information was collected from the Atmel A89C51RC2 datasheet.
+// Baud rate formula taken from the Siemens C501 datasheet.
 
 #ifndef __SERIAL_H
 #define __SERIAL_H
 
 // SCON: Serial Control Register (98h)
 //       Resets to 0x00
-//       See datasheet p44
+//       See AT89C51 datasheet p44
 #define SCON_SM_SHIFT     0x00  // Mode 0, shift register
 #define SCON_SM_8BIT      0x40  // Mode 1, 8-bit UART, variable baud
 #define SCON_SM_9BIT_FIX  0x80  // Mode 2, 9-bit UART, fixed baud
@@ -35,7 +38,10 @@
 #define TH1_57600_BAUD  255
 #define TH1_28800_BAUD  254
 
-// Initialize the serial port.
+// Function: serial_init
+//
+// Initialize the serial port to 57.6k baud, 8 data bits, no parity. Timer 1
+// will be configured as the baud rate source.
 void serial_init(void);
 
 #endif /* __SERIAL_H */

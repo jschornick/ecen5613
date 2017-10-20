@@ -1,10 +1,17 @@
 // File       : debug.h
 // Author     : Jeff Schornick
 //
-// A virtual debug port macro
+// A virtual debug port macros.
+//
+// These macros can be used to efficiently send an address/byte combination to a
+// range of XRAM addresses reserved for debugging. An external write signal will
+// be produced for such an address, with the debug value on the data bus.
 //
 // Compilation: Supports SDCC v3.5+, see included makefile for invocation
 // Version    : See GitHub repository jschornick/ecen5613 for revision details
+
+#ifndef __DEBUG_H
+#define __DEBUG_H
 
 #include <stdint.h>
 
@@ -25,3 +32,5 @@
 #else
 #define DP_X(addr,x)  /* NOP */
 #endif /* DEBUG */
+
+#endif /* __DEBUG_H */

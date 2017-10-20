@@ -5,6 +5,9 @@
 //
 // Compilation: Supports SDCC v3.5+, see included makefile for invocation
 // Version    : See GitHub repository jschornick/ecen5613 for revision details
+//
+// Baud rate formula taken from the Siemens C501 users guide.
+// The putchar/getchar commands are based on examples from ECEN5613 class notes.
 
 #include "timer.h"
 #include "serial.h"
@@ -25,7 +28,7 @@ void serial_init() {
   //  With SMOD=1
   //       (256-TH1) = (2/32) * 11059200 / (12 * baud_rate)
   //       TH1=255
-  // See; C501 user manual, page 6-33
+  // See: C501 user manual, page 6-33
   TH1 = TH1_57600_BAUD;
   TR1 = TCON_TR_ON;  // Start timer
   TI  = 1;           // force ready to transmit

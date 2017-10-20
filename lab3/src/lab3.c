@@ -3,14 +3,13 @@
 //
 // Implements the required functionality for ECEN5613 Lab 3.
 //
-// Specifically, ...
+// Specifically, Lab 3 presents an interactive interface to manage dynamic
+// buffers created on the heap. Two reserved buffers also record statistics
+// about data received over the serial port.
 //
 // Compilation: Supports SDCC v3.6+, see included makefile for invocation
 // Version    : See GitHub repository jschornick/ecen5613 for revision details
-//
-// Attribution for leveraged code...
 
-//#include <at89c51ed2.h>
 #include <stdio.h>  // printf
 #include <stdlib.h> // malloc
 #include <string.h> // memset
@@ -18,12 +17,12 @@
 #include "serial.h"
 #include "debug.h"
 
-// Command key definitions
-#define KEY_ADD    '+'
-#define KEY_DEL    '-'
-#define KEY_REPORT '?'
-#define KEY_SHOW   '='
-#define KEY_RESET  '@'
+// Command key definitions for the menu
+#define KEY_ADD    '+'  // Add a buffer command
+#define KEY_DEL    '-'  // Delete a buffer
+#define KEY_REPORT '?'  // Heap report and empty storage
+#define KEY_SHOW   '='  // Storage contents in hex
+#define KEY_RESET  '@'  // Reset all buffers
 
 // Define the valid size range for storage buffers
 #define MAIN_BUF_MIN 32
@@ -53,11 +52,17 @@ __data uint16_t total_chars;     // Count of all characters received between rep
 __data uint16_t next_buffer;     // Number of the next buffer to create
 
 // Use a printf with hexadecimal field width support
+// Can be redefined to use a faster/smaller printf (e.g. printf_tiny)
 #define printf printf
 
 
-// Attempt to dynamically create a new buffer of the specified size.
-// Returns 1 on success, 0 if allocation fails.
+// Function: new_buffer
+//
+// Attempt to dynamically create a new buffer of the specified size
+// on the heap.
+//
+// Inputs : buf_size, the size of the newbuffer to allocate
+// Returns: 1 on success, 0 if allocation fails.
 uint8_t new_buffer(uint16_t buf_size)
 {
   buffer[next_buffer] = malloc(buf_size);
@@ -69,6 +74,12 @@ uint8_t new_buffer(uint16_t buf_size)
   return 1;
 }
 
+// Function: read_uint16
+//
+// Reads a 16-bit unsigned value from the serial port. Non-numeric inputs are
+// ignored, and overflow is handled by returning a maximum value.
+//
+// Returns: A 16-bit value read from serial or 0xFFFF on overflow
 uint16_t read_uint16(void) {
   uint16_t val = 0;
   uint16_t new_val;
@@ -87,6 +98,13 @@ uint16_t read_uint16(void) {
   return val;
 }
 
+// Function: read_size
+//
+// Attempts to read a buffer size from the user.
+//
+// Inputs : min, the minimum buffer size
+//          max, the maximum buffer size
+// Returns: A value size between min and max, 0 otherwise.
 uint16_t read_size(uint16_t min, uint16_t max)
 {
   uint16_t size = 0;
@@ -106,17 +124,22 @@ uint16_t read_size(uint16_t min, uint16_t max)
 }
 
 
+// Function: init_storage_buffers
+//
+// Attempts to create the two required storage buffers buffer[0] and buffer[1],
+// based on parameters from the user. The size is limited based on
+// MAIN_BUF_MIN and MAIN_BUF_MAX, and a hardcoded restriction on being divisible
+// by 16. Either both buffers are created on success or none are allocated.
+//
+// Returns: Nothing, but the storage buffers are allocated on success.
 void init_storage_buffers(void)
 {
   uint16_t buf_size;
-  //printf("\n\rCreating primary buffers...\r\n");
   buf_size = read_size(MAIN_BUF_MIN, MAIN_BUF_MAX);
   if( buf_size & 0xF ) {
     printf("\r\nBuffer size must be divisible by 16!\r\n");
     return;
   }
-
-  //printf("Selected buffer size is: %u\r\n", buf_size);
 
   new_buffer(buf_size);
   if( buffer[0] == NULL ) {
@@ -135,6 +158,12 @@ void init_storage_buffers(void)
   printf("\r\nStorage buffers (0 and 1) successfully allocated with %u bytes each.\r\n", buf_size);
 }
 
+// Function: dump_buffer
+//
+// Dumps the ASCII contents of one buffer, max 64 characters per line.
+//
+// Inputs: buf_num, the buffer to dump
+//         count, the number of characters to dump
 void dump_buffer(uint16_t buf_num, uint16_t count)
 {
   uint16_t i;
@@ -149,6 +178,15 @@ void dump_buffer(uint16_t buf_num, uint16_t count)
   printf("\r\n");
 }
 
+// Function: dump_buffer_hex
+//
+// Dumps the ASCII contents of one buffer as hex, in the format:
+//   AAAA: DD DD DD DD DD DD DD DD DD DD DD DD DD DD DD DD
+//   AAAA: DD DD DD DD DD DD DD DD DD DD DD DD DD DD DD DD
+// ...where AAAA is the hex address and DD is the hex data.
+//
+// Inputs: buf_num, the buffer to dump
+//         count, the number of characters to dump
 void dump_buffer_hex(uint16_t buf_num, uint16_t count)
 {
   uint16_t i;
@@ -164,6 +202,10 @@ void dump_buffer_hex(uint16_t buf_num, uint16_t count)
   printf("\r\n");
 }
 
+// Function: cmd_report
+//
+// Produces a report on the heap configuration and each allocated buffer.
+// Dumps the ASCII contents of the storage buffers and resets them to empty.
 void cmd_report()
 {
   uint16_t i;
@@ -196,7 +238,11 @@ void cmd_report()
 
 }
 
-
+// Function: cmd_add
+//
+// Queries the user for new buffer paramters and attempts to allocate the requested buffer.
+// New buffer size is limited by the NEW_BUF_MIN and NEW_BUF_MAX paramters, as well as the
+// space available on the heap.
 void cmd_add(void) {
   uint16_t buf_size;
   buf_size = read_size(NEW_BUF_MIN, NEW_BUF_MAX);
@@ -209,6 +255,9 @@ void cmd_add(void) {
   }
 }
 
+// Function: cmd_reset
+//
+// Frees all buffers on the heap (including storage), forcing the program to restart.
 void cmd_reset()
 {
   uint16_t i;
@@ -222,6 +271,11 @@ void cmd_reset()
   next_buffer = 0;
 }
 
+// Function: cmd_del
+//
+// Presents the user with a list of buffers and attempts to remove the selected
+// buffer by number. Deleted buffers will have their space deallocated from the
+// heap. Storage buffers cannot be deleted this way.
 void cmd_del()
 {
   uint16_t buf_num;
@@ -253,12 +307,18 @@ void cmd_del()
   }
 }
 
+// Function: cmd_show
+//
+// Shows the contents of the storage buffers in hexadecimal.
 void cmd_show()
 {
   dump_buffer_hex(0, stored_capitals);
   dump_buffer_hex(1, stored_numbers);
 }
 
+// Function: display_menu
+//
+// Presents the user a simple menu of commands to choose from.
 void display_menu(void)
 {
   printf("\r\n=== BuffMaster 3000 Menu ===\r\n\r\n");
@@ -272,6 +332,14 @@ void display_menu(void)
 
 }
 
+// Function: store_key
+//
+// Filters a character previously input by the user into the storage buffers.
+// Capital letters are stored in buffer[0].
+// Numbers are stored in buffer[1].
+// All other characters are ignored.
+//
+// If the respecteive buffer is out of space, the character is not stored.
 void store_key(char c)
 {
   if ((c >= 'A') && (c <= 'Z')) {
@@ -287,6 +355,13 @@ void store_key(char c)
   }
 }
 
+// Function: main
+//
+// Initializes the system by clearing all buffer pointers and reseting all counters.
+//
+// After initialization, the main loop runs interactively, reading and
+// responding to user input. Commands are executed in response to a predefined
+// list of command characters. All other charactesr are considered for storage.
 void main()
 {
   __data char c;
@@ -298,7 +373,6 @@ void main()
   DEBUGPORT(0x23);
 
   memset(buffer, 0, sizeof(__xdata void *));
-  //memset(buffer_size, 0, sizeof(uint16_t));
 
   #ifndef PAULMON
   serial_init();
@@ -314,17 +388,27 @@ void main()
   printf("\r\n");
 
   while(1) {
+
+    // If storage buffers haven't been successfully initialized (or reset),
+    // attempt to intialize them.
     while (!next_buffer) {
       init_storage_buffers();
+      // Display a menu once initialization succeeds.
       if (next_buffer) {
         display_menu();
       }
     }
 
+    // Get a character from the user and echo it back.
     c = getchar();
     total_chars++;
     putchar(c);
 
+    DP_INFO(0xAA);
+    DP_INFO(c);
+
+    // Launch a command based on the received character, or consider it for
+    // storage.
     switch(c) {
     case KEY_ADD:
       cmd_add();
@@ -343,7 +427,6 @@ void main()
       display_menu();
       break;
     case KEY_RESET:
-      DP_INFO(0x42);
       cmd_reset();
       break;
     default:

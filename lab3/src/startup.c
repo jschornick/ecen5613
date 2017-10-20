@@ -1,7 +1,10 @@
 // File       : startup.c
 // Author     : Jeff Schornick
 //
-// External hardware initialization routines
+// External hardware initialization routines for the Atmel AT89C51RC2.
+//
+// Note that these routines are included selectively based on whether or not
+// running in a Paulmon environment.
 //
 // Compilation: Supports SDCC v3.6+, see included makefile for invocation
 // Version    : See GitHub repository jschornick/ecen5613 for revision details
@@ -10,7 +13,7 @@
 #include "at89c51rc2.h"
 #include "paulmon.h"
 
-// Add a Paulmon program header and menu item
+// Add a Paulmon program header and menu item.
 #ifdef PAULMON
 __code __at (PM_HEADER_ADDR) uint8_t paulmon_header[] = {
   PM_SIGNATURE,

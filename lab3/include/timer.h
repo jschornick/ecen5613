@@ -2,6 +2,8 @@
 // Author: Jeff Schornick
 //
 // Additional register definitions for 8051 timers
+//
+// Register data collected from the Siemens C501 users guide.
 
 #ifndef __TIMER_H
 #define __TIMER_H

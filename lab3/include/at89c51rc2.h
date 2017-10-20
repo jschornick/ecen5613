@@ -5,6 +5,8 @@
 //
 // Compilation: Supports SDCC v3.5+, see included makefile for invocation
 // Version    : See GitHub repository jschornick/ecen5613 for revision details
+//
+// Register definitions collected from the Atmel AT89C51RC2 datasheet.
 
 #ifndef __AT89C51RC2_H
 #define __AT89C51RC2_H
