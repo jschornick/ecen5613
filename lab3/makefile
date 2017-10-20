@@ -12,7 +12,6 @@ GIT_COMMIT = $(shell git log --pretty=format:'%h' -n 1; git diff-index --quiet H
 BUILD_DATE = $(shell date)
 
 
-
 # Project settings
 ##################
 
@@ -117,18 +116,9 @@ OBJS = $(C_SRCS:.c=.rel)
 
 default: $(NAME).hex
 
-%.HEX: %.asm
-	@echo Compiling $< with ASM51 ...
-	@$(ASM51)
-	@if grep -q "\*\* ERROR \*\*" $(@:.HEX=.LST); then rm -f $@; false; else true; fi
-
 # Convert 32-byte ihex to 16-byte for flashing
 %.hex: %.ihx
 	packihx $< >$@
-
-%.hex: %.asm
-	@echo Compiling $< with as31 ...
-	@$(AS31) $(AS31_FLAGS) $<
 
 # Precompile only
 %.i: %.c
@@ -144,11 +134,16 @@ default: $(NAME).hex
 
 # Compile from asm, don't link
 %.rel: $(SRC_DIR)/%.asm
-	sdas8051 -losg $<
+	sdas8051 -olg $<
+	mv $(<:.asm=.lst) $(CURDIR)
+	mv $(SRC_DIR)/$@ $(CURDIR)
 
 # Link and relocate into a single hex file
 lab3.ihx: $(OBJS)
 	$(CC) $(LFLAGS) $^ -o $@
+
+%.ihx: %.rel
+	$(CC) $^ -o $@
 
 %.flash: %.hex
 	@echo Setting up serial port...

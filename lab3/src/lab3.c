@@ -44,10 +44,13 @@ extern __xdata char __sdcc_heap[];
 __xdata char * buffer[MAX_BUFFERS];
 __xdata uint16_t buffer_size[MAX_BUFFERS];
 
-uint16_t next_buffer;     // Number of the next buffer to create
-uint16_t stored_capitals; // Count of stored capital characters
-uint16_t stored_numbers;  // Count of stored numeric characters
-uint16_t total_chars;     // Count of all characters received between reports
+// Place frequently accessed counters in faster IRAM.
+// Leaving these in XRAM makes the mainloop slow enough to miss characters
+// when reading from serial.
+__data uint16_t stored_capitals; // Count of stored capital characters
+__data uint16_t stored_numbers;  // Count of stored numeric characters
+__data uint16_t total_chars;     // Count of all characters received between reports
+__data uint16_t next_buffer;     // Number of the next buffer to create
 
 // Use a printf with hexadecimal field width support
 #define printf printf
@@ -286,7 +289,7 @@ void store_key(char c)
 
 void main()
 {
-  char c;
+  __data char c;
   next_buffer = 0;
   stored_capitals = 0;
   stored_numbers = 0;
@@ -311,7 +314,6 @@ void main()
   printf("\r\n");
 
   while(1) {
-    DP_INFO(0x42);
     while (!next_buffer) {
       init_storage_buffers();
       if (next_buffer) {
@@ -341,6 +343,7 @@ void main()
       display_menu();
       break;
     case KEY_RESET:
+      DP_INFO(0x42);
       cmd_reset();
       break;
     default:
