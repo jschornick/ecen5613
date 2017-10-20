@@ -65,36 +65,40 @@ uint8_t new_buffer(uint16_t buf_size)
   return 1;
 }
 
-uint16_t read_size(uint16_t min, uint16_t max)
-{
+uint16_t read_uint16(void) {
   uint16_t val = 0;
   uint16_t new_val;
   char c;
-
-  while ((val < min) || (val > max)) {
-    printf("\n\rEnter buffer size in bytes (%u-%u): ", min, max);
-    while( (c = getchar()) != '\r' ) {
-      if ( (c >= '0') && (c <= '9') ) {
-        putchar(c);
-        new_val = (val*10) + (c - '0');
-        // check for overflow
-        if( new_val < val ) {
-          val =  0xFFFF;
-          break;
-        }
-        val = new_val;
+  while( (c = getchar()) != '\r' ) {
+    if ( (c >= '0') && (c <= '9') ) {
+      putchar(c);
+      new_val = (val*10) + (c - '0');
+      // check for overflow
+      if( new_val < val ) {
+        return 0xFFFF;
       }
-    }
-    // Received EOL, verify value
-    if (val < min) {
-      printf("\r\nBuffer size is too small!\r\n");
-      val = 0;
-    } else if (val > max) {
-      printf("\r\nBuffer size is too large!\r\n");
-      val = 0;
+      val = new_val;
     }
   }
   return val;
+}
+
+uint16_t read_size(uint16_t min, uint16_t max)
+{
+  uint16_t size = 0;
+
+  while ((size < min) || (size > max)) {
+    printf("\n\rEnter buffer size in bytes (%u-%u): ", min, max);
+    size = read_uint16();
+    if (size < min) {
+      printf("\r\nBuffer size is too small!\r\n");
+      size = 0;
+    } else if (size > max) {
+      printf("\r\nBuffer size is too large!\r\n");
+      size = 0;
+    }
+  }
+  return size;
 }
 
 
@@ -215,7 +219,35 @@ void cmd_reset()
 }
 
 void cmd_del()
-{}
+{
+  uint16_t buf_num;
+  uint16_t i;
+  uint8_t available = 0;
+
+  printf("\r\nAvailable buffers: ");
+  for(i = 2; i<next_buffer; i++) {
+    if( buffer[i] ) {
+      printf("%d ", i);
+      available = 1;
+    }
+  }
+  if (!available) {
+    printf("NONE\r\n");
+    return;
+  }
+
+  printf("\r\n");
+  printf("\r\nChoose buffer to delete: ");
+  buf_num = read_uint16();
+
+  if ( (buf_num >=2) && buffer[buf_num] ) {
+    free(buffer[buf_num]);
+    buffer[buf_num] = 0;
+    printf("\r\nFreed buffer #%d.\r\n", buf_num);
+  } else {
+    printf("\r\nInvalid buffer choice.\r\n");
+  }
+}
 
 void cmd_show()
 {
@@ -225,7 +257,7 @@ void cmd_show()
 
 void display_menu(void)
 {
-  printf("\r\n=== BufferMaster 3000 Menu ===\r\n\r\n");
+  printf("\r\n=== BuffMaster 3000 Menu ===\r\n\r\n");
   printf("  %c - Add a new buffer\r\n", KEY_ADD);
   printf("  %c - Delete a buffer\r\n", KEY_DEL);
   printf("  %c - Buffer report and storage clear\r\n", KEY_REPORT);
@@ -267,9 +299,9 @@ void main()
   #endif
 
   printf("\r\n");
-  printf("---------------------------------\n\r");
-  printf("| Welcome to BufferMaster 3000! |\r\n");
-  printf("---------------------------------\r\n");
+  printf("-------------------------------\n\r");
+  printf("| Welcome to BuffMaster 3000! |\r\n");
+  printf("-------------------------------\r\n");
   printf("\r\n");
   printf("Built on %s (%s)\r\n", BUILD_DATE, GIT_COMMIT);
   printf("Compiled with heap size %u bytes\n\r", HEAP_SIZE);
