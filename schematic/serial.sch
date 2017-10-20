@@ -32,7 +32,7 @@ LIBS:ecen5613_lab-cache
 LIBS:switches
 EELAYER 26 0
 EELAYER END
-$Descr A4 11693 8268
+$Descr USLetter 11000 8500
 encoding utf-8
 Sheet 4 4
 Title "ECEN5613 Lab"
@@ -67,25 +67,17 @@ F 3 "" H 6400 2550 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	5350 2150 5550 2150
-Wire Wire Line
-	5550 2150 6200 2150
+	5350 2150 6200 2150
 Wire Wire Line
 	6200 2250 5350 2250
 Wire Wire Line
-	5350 2450 5550 2450
-Wire Wire Line
-	5550 2450 6200 2450
+	5350 2450 6200 2450
 Wire Wire Line
 	6200 2550 5350 2550
 Wire Wire Line
-	5350 2650 5550 2650
+	5350 2650 6200 2650
 Wire Wire Line
-	5550 2650 6200 2650
-Wire Wire Line
-	5350 2750 5550 2750
-Wire Wire Line
-	5550 2750 6200 2750
+	5350 2750 6200 2750
 Wire Wire Line
 	6200 2950 5350 2950
 Entry Wire Line
@@ -179,39 +171,7 @@ Entry Wire Line
 Entry Wire Line
 	5350 3600 5250 3500
 Wire Bus Line
-	5250 2250 5250 2350
-Wire Bus Line
-	5250 2350 5250 2450
-Wire Bus Line
-	5250 2450 5250 2550
-Wire Bus Line
-	5250 2550 5250 2650
-Wire Bus Line
-	5250 2650 5250 2750
-Wire Bus Line
-	5250 2750 5250 2850
-Wire Bus Line
-	5250 2850 5250 2950
-Wire Bus Line
-	5250 2950 5250 3050
-Wire Bus Line
-	5250 3050 5250 3500
-Wire Bus Line
-	5250 3500 5250 3600
-Wire Bus Line
-	5250 3600 5250 3700
-Wire Bus Line
-	5250 3700 5250 3800
-Wire Bus Line
-	5250 3800 5250 3900
-Wire Bus Line
-	5250 3900 5250 4000
-Wire Bus Line
-	5250 4000 5250 4100
-Wire Bus Line
-	5250 4100 5250 4200
-Wire Bus Line
-	5250 4200 5250 4300
+	5250 2250 5250 4300
 Text Label 5250 3400 1    39   ~ 0
 J5P[1..9]
 $Comp
@@ -325,26 +285,18 @@ Wire Wire Line
 Wire Wire Line
 	3750 1900 3750 2100
 Wire Wire Line
-	2650 1900 2850 1900
+	2650 1900 3750 1900
 Wire Wire Line
-	2850 1900 3750 1900
-Wire Wire Line
-	2850 1600 2850 1900
-Wire Wire Line
-	2850 1900 2850 2100
+	2850 1600 2850 2100
 Connection ~ 2850 1900
 Wire Wire Line
 	2350 2000 2350 1900
 Wire Wire Line
 	2350 1900 2450 1900
 Wire Wire Line
-	2850 4500 2850 4550
+	2850 4500 2850 4600
 Wire Wire Line
-	2850 4550 2850 4600
-Wire Wire Line
-	2850 4550 3750 4550
-Wire Wire Line
-	3750 4550 4200 4550
+	2850 4550 4200 4550
 Wire Wire Line
 	3750 4550 3750 4450
 Connection ~ 2850 4550
@@ -404,14 +356,10 @@ CTS_232
 Text Label 5650 2950 0    39   ~ 0
 RI_232
 Wire Wire Line
-	5350 2850 5550 2850
-Wire Wire Line
-	5550 2850 6200 2850
+	5350 2850 6200 2850
 Connection ~ 5550 2850
 Wire Wire Line
-	5550 2150 5550 2450
-Wire Wire Line
-	5550 2450 5550 2650
+	5550 2150 5550 2650
 Connection ~ 5550 2150
 Connection ~ 5550 2450
 Wire Wire Line
