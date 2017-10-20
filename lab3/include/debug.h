@@ -23,5 +23,5 @@
 #ifdef DEBUG
 #define DP_X(addr,x) ( *((__xdata uint8_t *) addr) = x)
 #else
-#define DP_X(addr,x)  // NOP
+#define DP_X(addr,x)  /* NOP */
 #endif /* DEBUG */
