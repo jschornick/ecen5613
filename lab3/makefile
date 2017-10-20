@@ -11,35 +11,6 @@ UTIL_DIR = ../util
 GIT_COMMIT = $(shell git log --pretty=format:'%h' -n 1; git diff-index --quiet HEAD || echo +)
 BUILD_DATE = $(shell date)
 
-# ASM51: DOSBox configuration
-#############################
-
-# The DOSBox conf file ensures that the sources files and ASM51 are
-# mounted in a standard location
-DOSBOX_FLAGS = -c exit -conf $(UTIL_DIR)/dosbox.conf >/dev/null
-DOS_SRC_DIR = G:\LAB3
-
-DOS_AS = E:\ASM51.EXE
-ASM51 = dosbox -c "$(DOS_AS) $(DOS_SRC_DIR)\$< $(ASM51_FLAGS)" $(DOSBOX_FLAGS)
-# generate full listing with symbol table, no page breaks, Intel hex
-ASM51_FLAGS = -I -F -S P=0
-
-
-# Alternate, non-DOS assembler
-# TODO: convert sources that need this to sdas and remove as31 rules
-AS31 = as31
-AS31_FLAGS = -l
-
-
-# ISP
-###########
-
-# The Atmel BatchISP utility is used for flashing the AT89C51
-ISP = $(UTIL_DIR)/isp.sh
-ISPCMD = $(ISP) -device AT89C51RC2 -hardware RS232 -port ${SERIAL} -baudrate ${BAUD_RATE} -operation LOADBUFFER $(CURDIR)/$< PROGRAM VERIFY
-# BatchISP only accepts serial devices ttyS1-S3, so others (e.g. ttyUSB0) must be aliased
-SERIAL = /dev/ttyS1
-BAUD_RATE = 115200
 
 
 # Project settings
@@ -60,6 +31,9 @@ MEMMODEL = large
 # Override default heap size, in bytes
 HEAP_SIZE = 3000
 
+# Debug port enabled when defined
+DEBUG = yes
+
 
 # C settings
 ############
@@ -75,6 +49,10 @@ endif
 
 ifdef HEAP_SIZE
   CPPFLAGS += -DHEAP_SIZE=$(HEAP_SIZE)
+endif
+
+ifdef DEBUG
+  CPPFLAGS += -DDEBUG
 endif
 
 CPPFLAGS += -DGIT_COMMIT=\"$(GIT_COMMIT)\"
@@ -111,6 +89,18 @@ endif
 ###########
 
 S51 = $(SDCC_DIR)/bin/s51
+
+
+# ISP
+###########
+
+# The Atmel BatchISP utility is used for flashing the AT89C51
+ISP = $(UTIL_DIR)/isp.sh
+ISPCMD = $(ISP) -device AT89C51RC2 -hardware RS232 -port ${SERIAL} -baudrate ${BAUD_RATE} -operation LOADBUFFER $(CURDIR)/$< PROGRAM VERIFY
+# BatchISP only accepts serial devices ttyS1-S3, so others (e.g. ttyUSB0) must be aliased
+SERIAL = /dev/ttyS1
+BAUD_RATE = 115200
+
 
 # Files
 ###########

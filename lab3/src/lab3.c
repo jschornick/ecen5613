@@ -16,6 +16,7 @@
 #include <string.h> // memset
 #include <stdint.h>
 #include "serial.h"
+#include "debug.h"
 
 // Command key definitions
 #define KEY_ADD    '+'
@@ -291,6 +292,8 @@ void main()
   stored_numbers = 0;
   total_chars = 0;
 
+  DEBUGPORT(0x23);
+
   memset(buffer, 0, sizeof(__xdata void *));
   //memset(buffer_size, 0, sizeof(uint16_t));
 
@@ -308,6 +311,7 @@ void main()
   printf("\r\n");
 
   while(1) {
+    DP_INFO(0x42);
     while (!next_buffer) {
       init_storage_buffers();
       if (next_buffer) {
