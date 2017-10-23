@@ -155,6 +155,8 @@ void init_storage_buffers(void)
     return;
   }
 
+  stored_capitals = 0;
+  stored_numbers = 0;
   printf("\r\nStorage buffers (0 and 1) successfully allocated with %u bytes each.\r\n", buf_size);
 }
 
@@ -269,6 +271,7 @@ void cmd_reset()
     }
   }
   next_buffer = 0;
+  total_chars = 0;
 }
 
 // Function: cmd_del
@@ -366,8 +369,6 @@ void main()
 {
   __data char c;
   next_buffer = 0;
-  stored_capitals = 0;
-  stored_numbers = 0;
   total_chars = 0;
 
   DEBUGPORT(0x23);
