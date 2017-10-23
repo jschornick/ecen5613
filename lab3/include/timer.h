@@ -36,7 +36,6 @@
 // T2CON: Timer 2 Control (C8h)
 #define T2CON_C_TIMER     0x00  // Timer mode
 #define T2CON_C_COUNTER   0x02  // Counter mode
-#define T2CON_TR2OUNTER   0x02  // Counter mode
 
 // TCON2 bit-addressable mapping (see 8052.h)
 #define T2CON_CP    T2CON_0

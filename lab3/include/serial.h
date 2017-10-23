@@ -38,10 +38,29 @@
 #define TH1_57600_BAUD  255
 #define TH1_28800_BAUD  254
 
-// Function: serial_init
+// Baud = 2^SMOD * F_periph / (6^(1-SPD) * 32 *(256-BRL))
+// BRL = 256 - (2*F_periph) / (32*baud)
+// F_periph = 5.5296 MHz -> BRL = 256-6 for 57.6k
+// F_periph = 10.8 KHz -> BRL = 256-9 for 75 baud
+#define BRL_57600_BAUD  250
+
+
+// f_periph = fosc/2
+// Baud = f_perpih / (16 * (65536-RCAP2))
+#define RCAPL_57600_BAUD 0xFA  /* 250 */
+#define RCAPH_57600_BAUD 0xFF
+
+#define RCAPL_115200_BAUD 0xFD  /* 253 */
+#define RCAPH_115200_BAUD 0xFF
+
+
+// Function: serial_init_t1
 //
 // Initialize the serial port to 57.6k baud, 8 data bits, no parity. Timer 1
 // will be configured as the baud rate source.
-void serial_init(void);
+void serial_init_t1(void);
+
+void serial_init_t2(void);
+void serial_init_brg(void);
 
 #endif /* __SERIAL_H */
