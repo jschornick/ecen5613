@@ -28,4 +28,15 @@
 #define AUXR_DPU_ON      0x00      // Enable weak pullups
 #define AUXR_DPU_OFF     0x80      // Disable weak pullups
 
+// PCON: Power Control (87h)
+#define PCON_IDLE_ENABLE  0x01     // Idle mode enabled
+#define PCON_PDE_ENABLE   0x02     // Power down enable
+
+#define INTR_EXT0   0
+#define INTR_TIMER0 1
+#define INTR_EXT1   2
+#define INTR_TIMER1 3
+#define INTR_SERIAL 4
+#define INTR_TIMER2 5
+
 #endif /* __AT89C51RC2_H */

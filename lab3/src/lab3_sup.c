@@ -14,6 +14,7 @@
 #include <stdlib.h> // malloc
 #include <string.h> // memset
 #include <stdint.h>
+#include "at89c51rc2.h"
 #include "clock.h"
 #include "serial.h"
 #include "pca.h"
@@ -21,16 +22,16 @@
 // Use a printf implementation with long support
 #define printf printf_fast
 
-#define KEY_RUN      'r'
-#define KEY_STOP     's'
+#define KEY_RUN      'P'
+#define KEY_STOP     'p'
 #define KEY_MIN      'f'
 #define KEY_MAX      'F'
-#define KEY_IDLE     'i'
-#define KEY_POWER    'p'
 #define KEY_WD_ON    'W'
 #define KEY_WD_OFF   'w'
 #define KEY_FEED_ON  'D'
 #define KEY_FEED_OFF 'd'
+#define KEY_IDLE     'z'
+#define KEY_POWER    'x'
 
 #define F_PERIPH_MIN (F_OSC / 1020)
 #define F_PERIPH_MAX (F_OSC / 2)
@@ -44,16 +45,12 @@ __data uint8_t feed_dog = 0;
 void display_menu(void)
 {
   printf("\r\n=== PCA Menu ===\r\n\r\n");
-  printf(" %c - Start the PWM\r\n", KEY_RUN);
-  printf(" %c - Stop the PWM\r\n", KEY_STOP);
-  printf(" %c - Set minimum F_periph\r\n", KEY_MIN);
-  printf(" %c - Set maximum F_periph\r\n", KEY_MAX);
-  printf(" %c - Enable PCA watchdog\r\n", KEY_WD_ON);
-  printf(" %c - Disable PCA watchdog\r\n", KEY_WD_OFF);
-  printf(" %c - Enable dog feeding\r\n", KEY_FEED_ON);
-  printf(" %c - Disable dog feeding\r\n", KEY_FEED_OFF);
-  printf(" %c - Idle mode\r\n", KEY_IDLE);
-  printf(" %c - Power Down mode\r\n", KEY_POWER);
+  printf(" %c/%c - Start/Stop the PWM\r\n", KEY_RUN, KEY_STOP);
+  printf(" %c/%c - Set max/min F_periph\r\n", KEY_MAX, KEY_MIN);
+  printf(" %c/%c - Enable/disable PCA watchdog\r\n", KEY_WD_ON, KEY_WD_OFF);
+  printf(" %c/%c - Enable/disable dog feeding\r\n", KEY_FEED_ON, KEY_FEED_OFF);
+  printf("  %c  - Idle mode\r\n", KEY_IDLE);
+  printf("  %c  - Power Down mode\r\n", KEY_POWER);
 }
 
 
@@ -124,17 +121,42 @@ void cmd_watchdog_off()
 // Function: cmd_idle
 void cmd_idle()
 {
+  printf("\r\nEntering idle mode.\r\n");
+  printf("\r\nPress a key to wake...");
+  while(!TI); // wait for transmit to finish
+  TI = 0;     // clear flag to avoid tripping interrupt early
+
+  P1_2 = 1; // led off
+  ES = 1;   // enable serial interrupts
+  PCON |= PCON_IDLE_ENABLE;
+  RI = 0;  // ignore wake up character
+  TI = 1;  // reenable transmitter
+  printf(" and we're back!\r\n");
 }
+
+
+//void serial_isr(void) __interrupt (INTR_SERIAL) __using (1)
+void serial_isr(void) __interrupt (INTR_SERIAL)
+{
+  ES = 0; // disable UART interrupts
+}
+
 
 // Function: cmd_power_down
 void cmd_power_down()
 {
+  printf("\r\nPowering down.\r\n");
+  while(!TI); // wait for transmit to finish
+  P1_2 = 1; // led off
+  PCON |= PCON_PDE_ENABLE;
+  // Program is now stopped!
+  P1_2 = 0; // led on
 }
 
 // Function: watchdog_reset
 //
-// Set the watchdog counter to a value that won't match the PCA counter any time
-// soon
+// Set the watchdog counter to a value that won't match the PCA counter for
+// another full cycle.
 void watchdog_reset()
 {
   uint16_t new_wd;
@@ -171,11 +193,12 @@ void main()
   __data char c;
 
   serial_init_brg();
+  EA = 1; // enable interrupts
 
   printf("\r\n");
-  printf("-------------------------------\n\r");
-  printf("| Welcome to the PCA Tester!  |\r\n");
-  printf("-------------------------------\r\n");
+  printf("--------------------------------\n\r");
+  printf("|  Welcome to the PCA Tester!  |\r\n");
+  printf("--------------------------------\r\n");
   printf("\r\n");
   printf("Built on %s (%s)\r\n", BUILD_DATE, GIT_COMMIT);
   printf("\r\n");
@@ -186,6 +209,7 @@ void main()
 
   while(1) {
 
+    P1_2 = 0; // led on
     printf("-> ");
     do {
       if (feed_dog) {
