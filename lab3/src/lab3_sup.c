@@ -15,6 +15,7 @@
 #include <string.h> // memset
 #include <stdint.h>
 #include "serial.h"
+#include "pca.h"
 
 // Use a compact printf implementation
 #define printf printf_tiny
@@ -46,11 +47,18 @@ void display_menu(void)
 // Function: cmd_run_pwm
 void cmd_run_pwm()
 {
+  // Set module 0 PWM to a 70% duty cycle
+  CCAP0H = DUTY_CYCLE(70);
+  // Run module 0 in PWM mode
+  CCAPM0 = CCAPM_PWM_MODE;
+  printf("\r\nPWM enabled on CEX0 (P1.3)\r\n");
 }
 
 // Function: cmd_stop_pwm
 void cmd_stop_pwm()
 {
+  CCAPM0 = CCAPM_NO_OPERATION;
+  printf("\r\nPWM disabled\r\n");
 }
 
 // Function: cmd_min_freq
@@ -73,6 +81,18 @@ void cmd_power_down()
 {
 }
 
+// Funciton: init_pca
+void init_pca()
+{
+  // Run during idle with the peripheral clock/2 as a source
+  CMOD = CMOD_CIDL_RUN | CMOD_CPS_FDIV2 | CMOD_WDTE_WDOFF;
+
+  CCAPM0 = CCAPM_NO_OPERATION;
+
+  // Turn on PCA
+  CR = CCON_CR_PCA_ON;
+
+}
 
 // Function: main
 //
@@ -94,13 +114,15 @@ void main()
   printf("Compiled with heap size %u bytes\n\r", HEAP_SIZE);
   printf("\r\n");
 
+  init_pca();
+
   display_menu();
 
   while(1) {
 
     // Get a character from the user and echo it back.
     c = getchar();
-    putchar(c);
+    //putchar(c);
 
     // Launch a command based on the received character
     switch(c) {

@@ -88,7 +88,8 @@ endif
 # Simulator
 ###########
 
-S51 = $(SDCC_DIR)/bin/s51
+S51_OPTS = -t 89C51R -k 8080
+S51 = $(SDCC_DIR)/bin/s51 $(S51_OPTS)
 
 
 # ISP
@@ -166,7 +167,7 @@ flash: $(NAME).flash
 .PHONY: simulate
 simulate: $(NAME).hex
 	@echo Starting simulator, telnet to port 8080 to connect...
-	$(S51) -k 8080 $<
+	$(S51) $<
 
 .PHONY: clean
 clean:
