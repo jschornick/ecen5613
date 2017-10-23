@@ -8,28 +8,35 @@
 // Compilation: Supports SDCC v3.6+, see included makefile for invocation
 // Version    : See GitHub repository jschornick/ecen5613 for revision details
 
-// TODO: Watchdog, alt PCA mode
+// TODO: additional PCA mode?
 
 #include <stdio.h>  // printf
 #include <stdlib.h> // malloc
 #include <string.h> // memset
 #include <stdint.h>
+#include "clock.h"
 #include "serial.h"
 #include "pca.h"
 
 // Use a printf implementation with long support
 #define printf printf_fast
 
-#define KEY_RUN 'r'
-#define KEY_STOP 's'
-#define KEY_MIN '-'
-#define KEY_MAX '+'
-#define KEY_IDLE 'i'
-#define KEY_POWER 'p'
+#define KEY_RUN      'r'
+#define KEY_STOP     's'
+#define KEY_MIN      'f'
+#define KEY_MAX      'F'
+#define KEY_IDLE     'i'
+#define KEY_POWER    'p'
+#define KEY_WD_ON    'W'
+#define KEY_WD_OFF   'w'
+#define KEY_FEED_ON  'D'
+#define KEY_FEED_OFF 'd'
 
-#define F_OSC 11059200UL
 #define F_PERIPH_MIN (F_OSC / 1020)
 #define F_PERIPH_MAX (F_OSC / 2)
+
+uint32_t freq = F_PERIPH_MAX;
+__data uint8_t feed_dog = 0;
 
 // Function: display_menu
 //
@@ -37,12 +44,16 @@
 void display_menu(void)
 {
   printf("\r\n=== PCA Menu ===\r\n\r\n");
-  printf("  %c - Start the PWM\r\n", KEY_RUN);
-  printf("  %c - Stop the PWM\r\n", KEY_STOP);
-  printf("  %c - Set minimum F_CLK frequency\r\n", KEY_MIN);
-  printf("  %c - Set maximum F_CLK frequency\r\n", KEY_MAX);
-  printf("  %c - Idle mode\r\n", KEY_IDLE);
-  printf("  %c - Power Down mode\r\n", KEY_POWER);
+  printf(" %c - Start the PWM\r\n", KEY_RUN);
+  printf(" %c - Stop the PWM\r\n", KEY_STOP);
+  printf(" %c - Set minimum F_periph\r\n", KEY_MIN);
+  printf(" %c - Set maximum F_periph\r\n", KEY_MAX);
+  printf(" %c - Enable PCA watchdog\r\n", KEY_WD_ON);
+  printf(" %c - Disable PCA watchdog\r\n", KEY_WD_OFF);
+  printf(" %c - Enable dog feeding\r\n", KEY_FEED_ON);
+  printf(" %c - Disable dog feeding\r\n", KEY_FEED_OFF);
+  printf(" %c - Idle mode\r\n", KEY_IDLE);
+  printf(" %c - Power Down mode\r\n", KEY_POWER);
 }
 
 
@@ -71,10 +82,11 @@ void cmd_min_freq()
   printf("\r\nSetting CPU/peripheral clock to %lu Hz...\r\n", F_PERIPH_MIN);
   printf("PCA clock (w/FDIV2) = %lu Hz\r\n", F_PERIPH_MIN/2);
   printf("PWM frequency (F_PCA/256) = %lu Hz\r\n", F_PERIPH_MIN/(512));
-  printf("\r\nBaud rate will be 75! ");
+  printf("\r\nBaud rate will be 75!\r\n ");
   CKRL = 0x00;
-  BRL = 247;
-  //RCAP2L = 247;
+  freq = F_PERIPH_MIN;
+  // Reconfigure for the fastest baud rate at this frequency... 75 baud!
+  BRL = BRL(75,F_PERIPH_MIN);
 }
 
 // Function: cmd_max_freq
@@ -84,10 +96,29 @@ void cmd_max_freq()
   printf("\r\nSetting CPU/peripheral clock to %lu Hz...\r\n", F_PERIPH_MAX);
   printf("PCA clock (w/FDIV2) = %lu Hz\r\n", F_PERIPH_MAX/2);
   printf("PWM frequency (F_PCA/256) = %lu Hz\r\n", F_PERIPH_MAX/(512));
-  printf("\r\nBaud rate will be 57600! ");
+  printf("\r\nBaud rate will be 57600!\r\n ");
   CKRL = 0xFF;
-  BRL = BRL_57600_BAUD;
-  //RCAP2L = RCAPL_57600_BAUD;
+  freq = F_PERIPH_MAX;
+  // Frequency is high enough to support a baud rate for 57.6k
+  BRL = BRL(57600,F_PERIPH_MAX);
+}
+
+//Function: cmd_watchdog_on
+void cmd_watchdog_on()
+{
+  printf("\r\nEnabling PCA watchdog timer\r\n");
+  CCAP4L = 0xFF;
+  CCAP4H = 0xFF;
+  CCAPM4 = CCAPM_WATCHDOG_MODE;
+  CMOD |= CMOD_WDTE_WDON;
+}
+
+//Function: cmd_watchdog_off
+void cmd_watchdog_off()
+{
+  //CCAPM4 = CCAPM_NO_OPERATION;
+  CMOD &= ~WDTE;
+  printf("\r\nPCA watchdog timer disabled\r\n");
 }
 
 // Function: cmd_idle
@@ -99,6 +130,23 @@ void cmd_idle()
 void cmd_power_down()
 {
 }
+
+// Function: watchdog_reset
+//
+// Set the watchdog counter to a value that won't match the PCA counter any time
+// soon
+void watchdog_reset()
+{
+  uint16_t new_wd;
+
+  // Calculate a value right before the current PCA counter
+  new_wd = ( (uint16_t) (CH << 8) + CL) - 1;
+
+  // Reset the watchdog to this far away value
+  CCAP4L = (new_wd & 0xff);
+  CCAP4H = (new_wd >> 8);
+}
+
 
 // Funciton: init_pca
 void init_pca()
@@ -122,11 +170,7 @@ void main()
 {
   __data char c;
 
-  #ifndef PAULMON
-  //serial_init_t1();
   serial_init_brg();
-  //serial_init_t2();
-  #endif
 
   printf("\r\n");
   printf("-------------------------------\n\r");
@@ -134,7 +178,6 @@ void main()
   printf("-------------------------------\r\n");
   printf("\r\n");
   printf("Built on %s (%s)\r\n", BUILD_DATE, GIT_COMMIT);
-  printf("Compiled with heap size %u bytes\n\r", HEAP_SIZE);
   printf("\r\n");
 
   init_pca();
@@ -144,11 +187,15 @@ void main()
   while(1) {
 
     printf("-> ");
-    // Get a character from the user and echo it back.
-    c = getchar();
-    //putchar(c);
+    do {
+      if (feed_dog) {
+        watchdog_reset();
+      }
+    } while( ! (c = getchar_nb()) );
+    printf("\r\n");
 
-    // Launch a command based on the received character
+    // Run a command based on the received character, or display the menu
+    // after an invalid selection
     switch(c) {
     case KEY_RUN:
       cmd_run_pwm();
@@ -161,6 +208,20 @@ void main()
       break;
     case KEY_MAX:
       cmd_max_freq();
+      break;
+    case KEY_WD_ON:
+      cmd_watchdog_on();
+      break;
+    case KEY_WD_OFF:
+      cmd_watchdog_off();
+      break;
+    case KEY_FEED_ON:
+      printf("Keeping watchdog fed...\r\n");
+      feed_dog = 1;
+      break;
+    case KEY_FEED_OFF:
+      printf("No longer feeding watchog...\r\n");
+      feed_dog = 0;
       break;
     case KEY_IDLE:
       cmd_idle();

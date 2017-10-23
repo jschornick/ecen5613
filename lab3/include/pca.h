@@ -46,6 +46,7 @@
 
 #define CCAPM_NO_OPERATION  0x0
 #define CCAPM_PWM_MODE      (CCAPM_ECOM_COMPARATOR | CCAPM_PWM_CEX)
+#define CCAPM_WATCHDOG_MODE (CCAPM_ECOM_COMPARATOR | CCAPM_MAT_SET_CCF)
 
 // Calculate a reset value for CCAPL to produce the desired duty cycle
 //   CCAPH->CCAPL when lower 8-bits of PCA counter overflow

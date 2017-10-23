@@ -86,3 +86,13 @@ char getchar() {
   RI = 0;
   return c;
 }
+
+char getchar_nb() {
+  char c = 0;
+  // only read a character if available
+  if (RI) {
+    c = SBUF;    // grab character before resetting RI
+    RI = 0;
+  }
+  return c;
+}

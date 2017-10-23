@@ -77,5 +77,11 @@ void serial_init_t2(void);
 // Timer 2 will be configured as the baud rate source.
 void serial_init_brg(void);
 
+// Function: getchar_nb
+//
+// Non-blocking version of getchar
+//
+// Return a character if one was available, 0 otherwise
+char getchar_nb();
 
 #endif /* __SERIAL_H */
