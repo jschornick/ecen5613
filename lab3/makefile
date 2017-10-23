@@ -16,10 +16,11 @@ BUILD_DATE = $(shell date)
 ##################
 
 # Primary target name
-NAME = lab3
+#NAME = lab3
+NAME = lab3_sup
 
 # Select code and link options to work with Paulmon
-PAULMON = yes
+#PAULMON = yes
 PM_HEADER_ADDR = 0x2000  # NB: must be on 256 byte boundary
 PM_PROG_START  = 0x2040  # HEADER_ADDR + 0x40
 PM_PROG_SIZE   = 0x5FC0  # (XRAM size) - PROG_START
@@ -105,7 +106,13 @@ BAUD_RATE = 115200
 ###########
 
 # File with main() must be first due to how linkage works
+
+ifeq ($(NAME), lab3)
 C_SRCS = lab3.c heap.c serial.c startup.c
+endif
+ifeq ($(NAME), lab3_sup)
+C_SRCS = lab3_sup.c heap.c serial.c startup_sup.c
+endif
 
 ASM_GEN = $(C_SRCS:.c=.asm)
 OBJS = $(C_SRCS:.c=.rel)
@@ -139,7 +146,7 @@ default: $(NAME).hex
 	mv $(SRC_DIR)/$@ $(CURDIR)
 
 # Link and relocate into a single hex file
-lab3.ihx: $(OBJS)
+$(NAME).ihx: $(OBJS)
 	$(CC) $(LFLAGS) $^ -o $@
 
 %.ihx: %.rel
@@ -163,4 +170,4 @@ simulate: $(NAME).hex
 
 .PHONY: clean
 clean:
-	rm -f *.HEX *.LST *.hex *.lst *.i $(ASM_GEN) *.rel *.map *.mem *.ihx *.lk *.sym *.rst
+	rm -f *.HEX *.LST *.hex *.lst *.i *.asm *.rel *.map *.mem *.ihx *.lk *.sym *.rst
