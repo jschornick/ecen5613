@@ -26,3 +26,4 @@
 **/schematic/*.kicad_pcb
 
 .#*
+.gdb_history
