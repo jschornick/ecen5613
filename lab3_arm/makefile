@@ -18,7 +18,7 @@ GCC_BIN_DIR = /usr/bin
 CC          = $(GCC_BIN_DIR)/arm-none-eabi-gcc
 GDB         = $(GCC_BIN_DIR)/arm-none-eabi-gdb -q
 
-INCLUDES    = -I$(CMSIS_INC_DIR) -I$(MSP_INC_DIR) -I$(DRIVERLIB_DIR)/driverlib/MSP432P4xx -I$(DRIVERLIB_DIR)/inc
+INCLUDES    = -I$(INC_DIR) -I$(CMSIS_INC_DIR) -I$(MSP_INC_DIR) -I$(DRIVERLIB_DIR)/driverlib/MSP432P4xx -I$(DRIVERLIB_DIR)/inc
 CPP_FLAGS   = -D__$(DEVICE)__ -Dgcc
 C_FLAGS     = $(CPP_FLAGS) $(INCLUDES)
 C_FLAGS    += -std=c99
@@ -39,13 +39,13 @@ LD_FLAGS   += -Wl,-Map=$(NAME).map
 # If using functions/macros from TI's driverlib, we need to link the library
 #LD_FLAGS   += $(DRIVERLIB_DIR)/driverlib/MSP432P4xx/gcc/msp432p4xx_driverlib.a
 
-C_SOURCES = $(NAME).c system_msp432p401r.c startup_msp432p401r_gcc.c
+C_SOURCES = $(NAME).c uart.c system_msp432p401r.c startup_msp432p401r_gcc.c
 OBJECTS   = $(addprefix $(BUILD_DIR)/, $(C_SOURCES:.c=.o))
 BINARY    = $(NAME).elf
 
 # The main project to build
 #NAME  = blink
-NAME  = pwm
+NAME  = demo
 
 all: $(BINARY)
 

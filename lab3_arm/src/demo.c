@@ -1,5 +1,19 @@
-#include "msp432p401r.h"
+// File       : demo.c
+// Author     : Jeff Schornick
+//
+// Lab 3 demo of MSP432 features.
+//
+// Includes reading buttons via GPIO interrupts, basic timer interrupts,
+// GPIO-based LED control, PWM-based control of the RGB LED, and an interrupt
+// driven UART driver.
+//
+// Compilation: GCC cross compiler for ARM, v4.9.3+
+// Version    : See GitHub repository jschornick/ecen5613 for revision details
+
+
 #include <stdint.h>
+#include "uart.h"
+#include "msp432p401r.h"
 
 // MSP-EXP432 board
 //
@@ -93,6 +107,7 @@ int main(void) {
   timer_init();
   button_init();
   pwm_init();
+  uart_init();
 
   __enable_irq();
 
