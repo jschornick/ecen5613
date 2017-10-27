@@ -28,11 +28,12 @@ C_FLAGS    += -g -gstrict-dwarf
 C_FLAGS    += -ffunction-sections -fdata-sections
 #C_FLAGS    += -MD
 
+LD_SCRIPT   = $(LD_DIR)/msp432p401r.lds
 LD_FLAGS		= -mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mthumb
 LD_FLAGS   += -T$(LD_SCRIPT)
 LD_FLAGS   += -l'c' -l'gcc' -l'nosys'
 LD_FLAGS   += -ffunction-sections -fdata-sections
-LD_SCRIPT   = $(LD_DIR)/msp432p401r.lds
+LD_FLAGS   += -Wl,-Map=$(NAME).map
 
 C_SOURCES		= blink.c system_msp432p401r.c startup_msp432p401r_gcc.c
 OBJECTS			= $(addprefix $(BUILD_DIR)/, $(C_SOURCES:.c=.o))
@@ -47,12 +48,17 @@ $(OBJECTS): | $(BUILD_DIR)
 $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)
 
+$(BUILD_DIR)/%.i: $(SRC_DIR)/%.c
+	$(CC) $(C_FLAGS) -E $< -o $@
+
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(C_FLAGS) -c $< -o $@
 
 $(BINARY): $(OBJECTS)
 	@echo Linking...
 	$(CC) $(LD_FLAGS) $^ -o $@
+	@echo
+	arm-none-eabi-size $@
 
 .PHONY: debug
 debug: $(BINARY) gdb_agent
@@ -86,4 +92,4 @@ gdb_agent:
 	@echo  PID is $(AGENT_PID)
 
 clean:
-	@rm -rf $(BUILD_DIR) *.elf *.pid *.log
+	@rm -rf $(BUILD_DIR) *.elf *.pid *.log *.map
