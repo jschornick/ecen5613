@@ -10,16 +10,17 @@ BUILD_DIR	= BUILD
 TI_GDB_DIR = $(HOME)/ti/msp432_gcc/emulation/common/uscif
 TI_GDB = $(TI_GDB_DIR)/gdb_agent_console
 
-MSP_INC_DIR 	= $(INC_DIR)/ti
+MSP_INC_DIR   = $(INC_DIR)/ti
 CMSIS_INC_DIR = $(INC_DIR)/arm
+DRIVERLIB_DIR = $(HOME)/ti/msp432_driverlib
 
-GCC_BIN_DIR		= /usr/bin
+GCC_BIN_DIR = /usr/bin
 CC          = $(GCC_BIN_DIR)/arm-none-eabi-gcc
-GDB			    = $(GCC_BIN_DIR)/arm-none-eabi-gdb -q
+GDB         = $(GCC_BIN_DIR)/arm-none-eabi-gdb -q
 
-INCLUDES		= -I$(CMSIS_INC_DIR) -I$(MSP_INC_DIR)
-CPP_FLAGS		= -D__$(DEVICE)__ -Dgcc
-C_FLAGS			= $(CPP_FLAGS) $(INCLUDES)
+INCLUDES    = -I$(CMSIS_INC_DIR) -I$(MSP_INC_DIR) -I$(DRIVERLIB_DIR)/driverlib/MSP432P4xx -I$(DRIVERLIB_DIR)/inc
+CPP_FLAGS   = -D__$(DEVICE)__ -Dgcc
+C_FLAGS     = $(CPP_FLAGS) $(INCLUDES)
 C_FLAGS    += -std=c99
 C_FLAGS    += -mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mthumb
 C_FLAGS    += -O0
@@ -29,17 +30,22 @@ C_FLAGS    += -ffunction-sections -fdata-sections
 #C_FLAGS    += -MD
 
 LD_SCRIPT   = $(LD_DIR)/msp432p401r.lds
-LD_FLAGS		= -mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mthumb
+LD_FLAGS    = -mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mthumb
 LD_FLAGS   += -T$(LD_SCRIPT)
-LD_FLAGS   += -l'c' -l'gcc' -l'nosys'
+LD_FLAGS   += -lc -lgcc -lnosys
 LD_FLAGS   += -ffunction-sections -fdata-sections
 LD_FLAGS   += -Wl,-Map=$(NAME).map
 
-C_SOURCES		= blink.c system_msp432p401r.c startup_msp432p401r_gcc.c
-OBJECTS			= $(addprefix $(BUILD_DIR)/, $(C_SOURCES:.c=.o))
+# If using functions/macros from TI's driverlib, we need to link the library
+#LD_FLAGS   += $(DRIVERLIB_DIR)/driverlib/MSP432P4xx/gcc/msp432p4xx_driverlib.a
 
-NAME  = blink
-BINARY = $(NAME).elf
+C_SOURCES = $(NAME).c system_msp432p401r.c startup_msp432p401r_gcc.c
+OBJECTS   = $(addprefix $(BUILD_DIR)/, $(C_SOURCES:.c=.o))
+BINARY    = $(NAME).elf
+
+# The main project to build
+#NAME  = blink
+NAME  = pwm
 
 all: $(BINARY)
 
@@ -56,7 +62,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 
 $(BINARY): $(OBJECTS)
 	@echo Linking...
-	$(CC) $(LD_FLAGS) $^ -o $@
+	$(CC) $^ $(LD_FLAGS) -o $@
 	@echo
 	arm-none-eabi-size $@
 
