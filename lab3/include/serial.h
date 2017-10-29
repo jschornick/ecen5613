@@ -74,7 +74,7 @@ void serial_init_t2(void);
 // Function: serial_init_brg
 //
 // Initialize the serial port to 57.6k baud, 8 data bits, no parity.
-// Timer 2 will be configured as the baud rate source.
+// The internal baud rate generator will be configured as the baud rate source.
 void serial_init_brg(void);
 
 // Function: getchar_nb

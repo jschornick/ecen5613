@@ -3,12 +3,22 @@
 //
 // Implements the supplemental functionality for ECEN5613 Lab 3.
 //
-// Specifically, ...
+// Specifically, an interactive menu is presented over serial which allow
+// the user to enable/disalbe a 70% duty cycle PWM signal on CEX0 (P1.3).
+// 
+// Also, the user may change the clock frequency of the processor and
+// peripherals from maximum to minimum.
+// 
+// Watchdog functionality includes enabling/disabling the watchdog, and 
+// optionally enabling the watchdog timer to be reset (fed) such that 
+// reset does not occur while the watchdog is running.
+//
+// Finally, the processor may be placed in Idle mode and woken by an
+// external serial interrupt, or alternately place in power down mode
+// until a manual reset is completed.
 //
 // Compilation: Supports SDCC v3.6+, see included makefile for invocation
 // Version    : See GitHub repository jschornick/ecen5613 for revision details
-
-// TODO: additional PCA mode?
 
 #include <stdio.h>  // printf
 #include <stdlib.h> // malloc

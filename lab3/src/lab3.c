@@ -376,7 +376,7 @@ void main()
   memset(buffer, 0, sizeof(__xdata void *));
 
   #ifndef PAULMON
-  serial_init();
+  serial_init_t1();
   #endif
 
   printf("\r\n");

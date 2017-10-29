@@ -88,7 +88,7 @@ endif
 # Simulator
 ###########
 
-S51_OPTS = -t 89C51R -k 8080
+S51_OPTS = -k 8080
 S51 = $(SDCC_DIR)/bin/s51 $(S51_OPTS)
 
 

@@ -14,6 +14,13 @@
 #include "timer.h"
 #include "serial.h"
 
+
+// Function: serial_init_t1
+//
+// Initialize the serial port to 57.6k baud, 8 data bits, no parity.
+// Timer 1 will be configured as the baud rate source.
+//
+// Assumes that F_OSC = 11.0592MHz
 void serial_init_t1()
 {
   // Enable baud rate doubler
@@ -31,6 +38,13 @@ void serial_init_t1()
   RI  = 0;           // clear received flag
 }
 
+
+// Function: serial_init_t2
+//
+// Initialize the serial port to 57.6k baud, 8 data bits, no parity.
+// Timer 2 will be configured as the baud rate source.
+//
+// Assumes that F_OSC = 11.0592MHz
 void serial_init_t2()
 {
   // Enable baud rate doubler
@@ -55,6 +69,10 @@ void serial_init_t2()
 }
 
 
+// Function: serial_init_brg
+//
+// Initialize the serial port to 57.6k baud, 8 data bits, no parity.
+// The internal baud rate generator will be configured as the baud rate source.
 void serial_init_brg()
 {
   // Enable baud rate doubler
@@ -73,12 +91,22 @@ void serial_init_brg()
 }
 
 
+// Function: putchar
+//
+// Blocking version of putchar
+//
+// Sends a character out the serial port
 void putchar(char c) {
   while(!TI);  // Block until transmitter is ready
   SBUF = c;
   TI = 0;
 }
 
+// Function: getchar_nb
+//
+// Blocking version of getchar
+//
+// Return a character from the serial port
 char getchar() {
   char c;
   while(!RI);  // Block until data received
@@ -87,6 +115,11 @@ char getchar() {
   return c;
 }
 
+// Function: getchar_nb
+//
+// Non-blocking version of getchar
+//
+// Return a character if one was available, 0 otherwise
 char getchar_nb() {
   char c = 0;
   // only read a character if available
