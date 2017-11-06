@@ -34,7 +34,7 @@ EELAYER 26 0
 EELAYER END
 $Descr USLetter 11000 8500
 encoding utf-8
-Sheet 1 4
+Sheet 1 5
 Title "ECEN5613 Lab"
 Date "F2017"
 Rev ""
@@ -986,4 +986,17 @@ Wire Wire Line
 Connection ~ 7700 6400
 Wire Wire Line
 	6950 6150 6300 6150
+Text GLabel 6400 6450 2    39   Input ~ 0
+LCD_EN
+Wire Wire Line
+	6400 6450 6300 6450
+$Sheet
+S 9000 2050 550  350 
+U 5A001753
+F0 "LCD" 39
+F1 "lcd.sch" 39
+F2 "AD[0..7]" B L 9000 2200 39 
+$EndSheet
+Wire Bus Line
+	8500 2200 9000 2200
 $EndSCHEMATC
