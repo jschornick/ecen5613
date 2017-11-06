@@ -110,6 +110,8 @@ void lcd_putch(char cc)
   LCD_DATA_WR = cc;
 }
 
+#include <stdio.h>
+
 // Function: lcd_putstr
 //
 // Writes the specified null-terminated string to the LCD starting at the
@@ -121,6 +123,7 @@ void lcd_putstr(char *ss)
   uint8_t row = 0;
 
   column = LCD_STAT & LCD_DDRAM_MASK;
+  printf("Start addr: %02x\r\n", column);
 
   if (column >= 0x40) {
     column -= 0x40;
@@ -131,12 +134,13 @@ void lcd_putstr(char *ss)
     row += 2;
   }
 
-  while(ss) {
+  while(*ss) {
     if (column == 20) {
       column = 0;
       row = (row+1) % 4;
       lcd_gotoxy(row, column);
     }
+    printf("(%d,%d)\r\n", row, column);
     lcd_putch(*ss++);
     column++;
   }

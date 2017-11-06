@@ -13,6 +13,11 @@
 
 #include <stdint.h>
 
+extern volatile __xdata __at (0xF000) uint8_t LCD_CMD;
+extern volatile __xdata __at (0xF001) uint8_t LCD_STAT;
+extern volatile __xdata __at (0xF002) uint8_t LCD_DATA_WR;
+extern volatile __xdata __at (0xF003) uint8_t LCD_DATA_RD;
+
 /////////////////////////////////
 // Send command via LCD_CMD_ADDR
 
@@ -115,7 +120,5 @@ void lcd_putstr(char *ss);
 //
 // Clears the LCD using the HD44780 Clear display instruction.
 void lcd_clear(void);
-
-
 
 #endif /* __LCD_H */

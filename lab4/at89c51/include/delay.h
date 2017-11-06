@@ -11,6 +11,11 @@
 
 #pragma sdcc_hash +  /* allow # in macro defintion */
 
+#define nop()   \
+  __asm         \
+    nop         \
+  __endasm;
+
 // 11.0592MHz / 12 osc/cycle = 921600 cycles/second = 1.0850694 us/cycle
 
 // 921600 (cycles/s) / 1000000 (us/s) * 100 = 92.16 cycles per 100us
