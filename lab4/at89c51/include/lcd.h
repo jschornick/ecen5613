@@ -3,15 +3,6 @@
 //
 // LCD register definitions and function declarations
 //
-// The HD44780U LCD controller is attached to the 8051 as follows:
-//
-//    LCD     8051
-//   -----   ------
-//     RW      A0  (latched AD0)
-//     RS      A1  (latched AD1)
-//      E    LCDEN (!RD + !WR + A15 + A14 + A13 + A12)
-//    DB0-7  AD0-7
-//
 // Compilation: Supports SDCC v3.5+, see included makefile for invocation
 // Version    : See GitHub repository jschornick/ecen5613 for revision details
 //
@@ -19,21 +10,6 @@
 
 #ifndef __LCD_H
 #define __LCD_H
-
-/////////////////////////////////
-// Memory mapped addresses
-
-/* #define LCD_CMD_ADDR    0xF000   /\* Send command (RW=0, RS=0), write only *\/ */
-/* #define LCD_STAT_ADDR   0xF001   /\* Read status (RW=1, RS=0), read only *\/ */
-/* #define LCD_DATA_WR     0xF002   /\* Write data, (RW=0, RS=1) *\/ */
-/* #define LCD_DATA_RD     0xF003   /\* Read data (RW=1, RS=1) *\/ */
-
-// TODO: may need to change to extern and move definition to lcd.c
-// See SDCC section 3.5.5 (Absolute addressing) for syntax
-volatile __xdata __at (0xF000) uint8_t LCD_CMD;      // Send command (RW=0, RS=0), write only
-volatile __xdata __at (0xF001) uint8_t LCD_STAT;     // Read status (RW=1, RS=0), read only
-volatile __xdata __at (0xF002) uint8_t LCD_DATA_WR;  // Write data, (RW=0, RS=1)
-volatile __xdata __at (0xF003) uint8_t LCD_DATA_RD;  // Read data (RW=1, RS=1)
 
 
 /////////////////////////////////
@@ -93,6 +69,52 @@ volatile __xdata __at (0xF003) uint8_t LCD_DATA_RD;  // Read data (RW=1, RS=1)
 
 #define LCD_BUSY_MASK     0x80  /* busy flag */
 #define LCD_COUNTER_MASK  0x7F  /* address counter */
+
+
+// Function: lcdinit
+//
+// Initializes the LCD
+// Refer to Figure 25 on page 212 of the HD44780U data sheet.
+void lcdinit(void);
+
+
+// Function: lcdbusywait
+//
+// Polls the LCD busy flag, blocks until until the LCD controller is ready to
+// accept another command.
+void lcdbusywait(void);
+
+
+// Function: lcdgotoaddr
+//
+// Sets the cursor to the specified LCD DDRAM address.
+void lcdgotoaddr(unsigned char addr);
+
+
+// Function: lcdgotoxy
+//
+// Sets the cursor to the LCD DDRAM address corresponding to the specified row
+// and column. Location (0,0) is the top left corner of the LCD screen.
+void lcdgotoxy(unsigned char row, unsigned char column);
+
+// Function: lcdputch
+//
+// Writes the specified character to the current LCD cursor position.
+void lcdputch(char cc);
+
+// Function: lcdputstr
+//
+// Writes the specified null-terminated string to the LCD starting at the
+// current LCD cursor position. Automatically wraps long strings to the next LCD
+// line after the right edge of the display screen has been reached.
+void lcdputstr(char *ss);
+
+
+// Function: lcdclear
+//
+// Clears the LCD using the HD44780 Clear display instruction.
+void lcdclear(void);
+
 
 
 #endif /* __LCD_H */

@@ -107,7 +107,7 @@ BAUD_RATE = 115200
 
 # File with main() must be first due to how linkage works
 
-C_SRCS = lab4.c heap.c serial.c startup.c
+C_SRCS = lab4.c startup.c heap.c serial.c lcd.c
 
 ASM_GEN = $(C_SRCS:.c=.asm)
 OBJS = $(C_SRCS:.c=.rel)
