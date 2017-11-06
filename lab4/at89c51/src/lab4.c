@@ -11,6 +11,7 @@
 #include <stdio.h>  // printf
 #include <stdint.h>
 #include "serial.h"
+#include "lcd.h"
 
 // Use a printf implementation with long support
 #define printf printf_fast
