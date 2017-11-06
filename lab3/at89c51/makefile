@@ -6,7 +6,7 @@
 
 SRC_DIR = src
 SDCC_DIR = $(HOME)/sdcc-3.6.0
-UTIL_DIR = ../util
+UTIL_DIR = ../../util
 
 GIT_COMMIT = $(shell git log --pretty=format:'%h' -n 1; git diff-index --quiet HEAD || echo +)
 BUILD_DATE = $(shell date)
