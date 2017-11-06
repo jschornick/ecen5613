@@ -11,6 +11,7 @@
 #ifndef __LCD_H
 #define __LCD_H
 
+#include <stdint.h>
 
 /////////////////////////////////
 // Send command via LCD_CMD_ADDR
@@ -22,9 +23,9 @@
 // Entry mode
 // 0  0  0  0  0  1  I/D  S
 #define LCD_CMD_MODE      0x04
-#define LCD_MODE_INC      0x02  /* Increment */
-#define LCD_MODE_DEC      0x00  /* Decrement */
-#define LCD_MODE_SHIFT    0x01  /* Shift display  */
+#define LCD_MODE_INC      0x02  /* Increment address on write */
+#define LCD_MODE_DEC      0x00  /* Decrement address on write */
+#define LCD_MODE_SHIFT    0x01  /* Shift display */
 #define LCD_MODE_NOSHIFT  0x00  /* Don't shift display (move cursor)  */
 
 // Display control
@@ -47,7 +48,7 @@
 
 // Funciton set
 // 0  0  1  DL  N  F  x  x
-#define LCD_FUNC          0x20
+#define LCD_CMD_FUNC      0x20
 #define LCD_FUNC_8BIT     0x10
 #define LCD_FUNC_4BIT     0x00
 #define LCD_FUNC_2LINE    0x08
@@ -71,49 +72,49 @@
 #define LCD_COUNTER_MASK  0x7F  /* address counter */
 
 
-// Function: lcdinit
+// Function: lcd_init
 //
 // Initializes the LCD
 // Refer to Figure 25 on page 212 of the HD44780U data sheet.
-void lcdinit(void);
+void lcd_init(void);
 
 
-// Function: lcdbusywait
+// Function: lcd_busywait
 //
 // Polls the LCD busy flag, blocks until until the LCD controller is ready to
 // accept another command.
-void lcdbusywait(void);
+void lcd_busywait(void);
 
 
-// Function: lcdgotoaddr
+// Function: lcd_gotoaddr
 //
 // Sets the cursor to the specified LCD DDRAM address.
-void lcdgotoaddr(unsigned char addr);
+void lcd_gotoaddr(uint8_t addr);
 
 
-// Function: lcdgotoxy
+// Function: lcd_gotoxy
 //
 // Sets the cursor to the LCD DDRAM address corresponding to the specified row
 // and column. Location (0,0) is the top left corner of the LCD screen.
-void lcdgotoxy(unsigned char row, unsigned char column);
+void lcd_gotoxy(uint8_t row, uint8_t column);
 
-// Function: lcdputch
+// Function: lcd_putch
 //
 // Writes the specified character to the current LCD cursor position.
-void lcdputch(char cc);
+void lcd_putch(char cc);
 
-// Function: lcdputstr
+// Function: lcd_putstr
 //
 // Writes the specified null-terminated string to the LCD starting at the
 // current LCD cursor position. Automatically wraps long strings to the next LCD
 // line after the right edge of the display screen has been reached.
-void lcdputstr(char *ss);
+void lcd_putstr(char *ss);
 
 
-// Function: lcdclear
+// Function: lcd_clear
 //
 // Clears the LCD using the HD44780 Clear display instruction.
-void lcdclear(void);
+void lcd_clear(void);
 
 
 

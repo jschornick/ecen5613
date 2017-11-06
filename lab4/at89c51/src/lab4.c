@@ -22,7 +22,15 @@
 // ...
 void main()
 {
-
   serial_init_brg();
+  printf("Welcome!\r\n");
 
+  printf("Initializing LCD... ");
+  lcd_init();
+  printf("done!\r\n");
+
+  lcd_putch('x');
+  lcd_putstr("Hello!");
+
+  while(1);
 }
