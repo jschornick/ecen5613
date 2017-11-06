@@ -12,8 +12,8 @@ Device          g16v8a;
  *
  * ECEN5613 Lab 4
  *
- * Define the logic signals for peripheral chip select (/CSPERIPH), external 
- * RAM read/write (/RAM_RD and /RAM_WR), and the DEBUG latch.
+ * Define the logic signals for external RAM read/write (/RAM_RD and /RAM_WR),
+ * the DEBUG latch, and the LCD enable (LCD_EN) 
  *
 \***************************************************************************/
 
@@ -36,7 +36,7 @@ Pin 9 = nWR;    /* External data memory write strobe (active low) */
  *                 if not used for input.
  *************************************************************/
 
-Pin 13 = nCSPERIPH;  /* Chip select peripheral device (active low) */ 
+Pin 12 = LCD_EN;     /* LCD enable, high during LCD read/write */ 
 Pin 14 = DEBUG;      /* Debug latch signal (active on rising edge */
 Pin 15 = nEPROM_OE;  /* Output enable of EPROM (active low) */
 Pin 16 = nRAM_RD;    /* Read of external data RAM (-> /NVRAM_OE) */
@@ -46,11 +46,13 @@ Pin 17 = nRAM_WR;    /* Write of external data RAM (-> /NVRAM_WE) */
 /* LOGIC
  ***************************************************************************/
 
-/* When the 4 most-significant address bits are set, assert the
-   chip select on an external peripheral (active low). */
+/* When the 4 most-significant address bits are set, the LCD is selected
+   Entire address range is 0xF000 - 0xFFFF, though only 0xF000-0xF003 are
+   used. */
+lcd_addr = ([A15..A12]:&);
 
-nCSPERIPH = !([A15..A12]:&);
-
+/* Set HD44870U LCD enable high during a read or write to the LCD addresses */
+LCD_EN =  lcd_addr & (!nRD # !nWR);
 
 /* EPROM should only be active (driving outputs) during an external
    program read, and only for address range 0x0000..0x7fff */

@@ -1,0 +1,41 @@
+Name     lab4;
+PartNo   XXX;
+Date     XX/XX/XX;
+Revision XXX;
+Designer J. Schornick;
+Company  CU Boulder;
+Assembly XXX;
+Location XXX;
+Device   g16v8a;
+
+/****************************************************************/
+/*                                                              */
+/* ECEN5613 Lab 4                                               */
+/*                                                              */
+/* Test vectors to verify LCD_EN (LCD Enable)                   */
+/*                                                              */
+/****************************************************************/
+
+ORDER: A12, A13, A14, A15, %3, nRD, %3, nWR, %5, LCD_EN;
+
+VECTORS:
+
+/* Enable LCD only for 0xFxxx addresses */
+0000 X X   L
+0001 X X   L
+0010 X X   L
+0100 X X   L
+1000 X X   L
+1110 X X   L
+1101 X X   L
+1011 X X   L
+0111 X X   L
+
+/* No read or write */
+XXXX 1 1   L
+
+/* Valid LCD read */
+1111 0 1   H
+
+/* Valid LCD write */
+1111 1 0   H
