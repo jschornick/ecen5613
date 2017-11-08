@@ -201,6 +201,8 @@ void cmd_type(void)
 #define KEY_EE_WRITE 'W'  // Write byte to EEPROM
 #define KEY_EE_READ  'R'  // Read byte from EEPROM
 #define KEY_EE_DUMP  'E'  // Dump EEPROM
+#define KEY_SAVE     'V'  // Save LCD data to EEPROM
+#define KEY_LOAD     'L'  // Load LCD data from EEPROM
 
 
 void lcd_welcome(void)
@@ -298,23 +300,20 @@ void cmd_ee_read(void)
 {
   uint16_t addr;
   uint8_t data;
-  /* uint8_t nacks = 0; */
 
   printf("\r\nEEPROM address to read (0xABC) ? 0x");
   addr = read_hex_n(3);
   data = 0;
-  while( eeprom_busy() ) {nacks++; };
+  eeprom_busy();
   eeprom_read(addr,&data);
-  putchar('\r');
-  putchar('\n');
+  printf("\r\n");
   putchar(NIBBLE_TO_ASCII(addr>>8));
   putchar(NIBBLE_TO_ASCII((addr&0xff)>>4));
   putchar(NIBBLE_TO_ASCII(addr&0xf));
-  putchar(':');
-  putchar(' ');
+  printf(": ");
   putchar(NIBBLE_TO_ASCII(data>>4));
   putchar(NIBBLE_TO_ASCII(data&0xf));
-  /* printf("\r\n(%d nacks)\r\n", nacks); */
+  printf("\r\n");
 }
 
 void cmd_ee_dump(void)
@@ -354,6 +353,49 @@ void cmd_ee_dump(void)
   putchar('\n');
 }
 
+void cmd_save(void)
+{
+  uint16_t ee_addr;
+  uint8_t i;
+
+  printf("\r\nSave LCD data to EEPROM\r\n");
+  printf("\r\nEEPROM address: 0xABC = 0x");
+  ee_addr = read_hex_n(3);
+  printf("\r\nSaving... ");
+  lcd_gotoaddr(0x0);
+  for(i=0; i<= LCD_COLS*2; i++) {
+    eeprom_write(ee_addr++, lcd_getchar());
+  }
+  lcd_gotoaddr(0x40);
+  for(i=0; i<= LCD_COLS*2; i++) {
+    eeprom_write(ee_addr++, lcd_getchar());
+  }
+  printf("done!\r\n");
+}
+
+void cmd_load(void)
+{
+  uint16_t ee_addr;
+  uint8_t i;
+  uint8_t data;
+
+  printf("\r\nLoad LCD data from EEPROM\r\n");
+  printf("\r\nEEPROM address: 0xABC = 0x");
+  ee_addr = read_hex_n(3);
+  printf("\r\nLoading... ");
+  lcd_gotoaddr(0x0);
+  for(i=0; i<= LCD_COLS*2; i++) {
+    eeprom_read(ee_addr++, &data);
+    lcd_putch(data);
+  }
+  lcd_gotoaddr(0x40);
+  for(i=0; i<= LCD_COLS*2; i++) {
+    eeprom_read(ee_addr++, &data);
+    lcd_putch(data);
+  }
+  printf("done!\r\n");
+}
+
 // Function: display_menu
 //
 // Presents the user a simple menu of commands to choose from.
@@ -369,6 +411,8 @@ void display_menu(void)
   printf(" %c - EEPROM: Write byte\r\n", KEY_EE_WRITE);
   printf(" %c - EEPROM Read byte\r\n", KEY_EE_READ);
   printf(" %c - EEPROM: Dump memory\r\n", KEY_EE_DUMP);
+  printf(" %c - COMBO: Save LCD -> EEPROM\r\n", KEY_SAVE);
+  printf(" %c - COMBO: Load LCD <- EEPROM\r\n", KEY_LOAD);
 }
 
 // Function: main
@@ -399,7 +443,7 @@ void main()
   while(1) {
 
     printf("-> ");
-    c = getchar();  // block until input
+    c = getchar() & ~0x20;
     printf("\r\n");
 
     // Run a command based on the received character, or display the menu
@@ -431,6 +475,12 @@ void main()
       break;
     case KEY_EE_DUMP:
       cmd_ee_dump();
+      break;
+    case KEY_SAVE:
+      cmd_save();
+      break;
+    case KEY_LOAD:
+      cmd_load();
       break;
     default:
       display_menu();
