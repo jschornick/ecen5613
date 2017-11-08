@@ -10,6 +10,8 @@
 #include "lcd.h"
 #include "delay.h"
 
+#include <stdio.h>
+
 // Memory mapped addresses
 //
 // The HD44780U LCD controller is attached to the 8051 as follows:
@@ -83,6 +85,15 @@ void lcd_gotoaddr(uint8_t addr)
 //
 // Sets the cursor to the LCD DDRAM address corresponding to the specified row
 // and column. Location (0,0) is the top left corner of the LCD screen.
+//
+// 16x4 LCD memory layout:
+//        0           15
+//      ----         ----
+//  0:  0x00   ...   0x0F
+//  1:  0x40   ...   0x4F
+//  2:  0x10   ...   0x1F
+//  3:  0x50   ...   0x5F
+//
 void lcd_gotoxy(uint8_t row, uint8_t column)
 {
   switch (row) {
@@ -93,10 +104,10 @@ void lcd_gotoxy(uint8_t row, uint8_t column)
     lcd_gotoaddr(column+0x40);
     break;
   case 2:
-    lcd_gotoaddr(column+0x14);
+    lcd_gotoaddr(column+0x10);
     break;
   case 3:
-    lcd_gotoaddr(column+0x54);
+    lcd_gotoaddr(column+0x50);
     break;
   }
 }
@@ -110,7 +121,45 @@ void lcd_putch(char cc)
   LCD_DATA_WR = cc;
 }
 
-#include <stdio.h>
+uint8_t lcd_getchar()
+{
+  lcd_busywait();
+  return LCD_DATA_RD;
+}
+
+void lcd_getxy(uint8_t *row, uint8_t *col)
+{
+  uint8_t addr;
+  addr = lcd_getaddr();
+  /* printf("Addr: %02x = ", addr); */
+
+  *row = 0;
+  if (addr >= 0x40) {
+    addr -= 0x40;
+    (*row)++;
+  }
+  if (addr >= 0x10) {
+    addr -= 0x10;
+    *row += 2;
+  }
+  *col = addr;
+  /* printf("(%u,%u)\r\n", *row, *col); */
+}
+
+uint8_t lcd_getaddr()
+{
+  lcd_busywait();
+  // wait t_add = 5.5us for address to be valid
+  // (see HD44780U datasheet p192)
+  delay_5_5us();
+  return (LCD_STAT & LCD_DDRAM_MASK);
+}
+
+void lcd_cgram_addr(uint8_t addr)
+{
+  lcd_busywait();
+  LCD_CMD = LCD_CMD_CGRAM | (addr & LCD_CGRAM_MASK);
+}
 
 // Function: lcd_putstr
 //
@@ -119,30 +168,17 @@ void lcd_putch(char cc)
 // line after the right edge of the display screen has been reached.
 void lcd_putstr(char *ss)
 {
-  uint8_t column;
   uint8_t row = 0;
-
-  column = LCD_STAT & LCD_DDRAM_MASK;
-  printf("Start addr: %02x\r\n", column);
-
-  if (column >= 0x40) {
-    column -= 0x40;
-    row++;
-  }
-  if (column >= 0x14) {
-    column -= 0x14;
-    row += 2;
-  }
+  uint8_t col = 0;
+  lcd_getxy(&row, &col);
 
   while(*ss) {
-    if (column == 20) {
-      column = 0;
-      row = (row+1) % 4;
-      lcd_gotoxy(row, column);
-    }
-    printf("(%d,%d)\r\n", row, column);
     lcd_putch(*ss++);
-    column++;
+    if (++col == LCD_COLS) {
+      col = 0;
+      row = (row+1) % LCD_ROWS;
+      lcd_gotoxy(row, col);
+    }
   }
 }
 

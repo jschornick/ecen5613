@@ -18,6 +18,9 @@ extern volatile __xdata __at (0xF001) uint8_t LCD_STAT;
 extern volatile __xdata __at (0xF002) uint8_t LCD_DATA_WR;
 extern volatile __xdata __at (0xF003) uint8_t LCD_DATA_RD;
 
+#define LCD_ROWS 4
+#define LCD_COLS 16
+
 /////////////////////////////////
 // Send command via LCD_CMD_ADDR
 
@@ -97,6 +100,15 @@ void lcd_busywait(void);
 void lcd_gotoaddr(uint8_t addr);
 
 
+// Function: lcd_getaddr
+//
+// Gets the current LCD DDRAM/CGRAM address
+uint8_t lcd_getaddr(void);
+
+uint8_t lcd_getchar(void);
+
+void lcd_getxy(uint8_t *row, uint8_t *col);
+
 // Function: lcd_gotoxy
 //
 // Sets the cursor to the LCD DDRAM address corresponding to the specified row
@@ -120,5 +132,7 @@ void lcd_putstr(char *ss);
 //
 // Clears the LCD using the HD44780 Clear display instruction.
 void lcd_clear(void);
+
+void lcd_cgram_addr(uint8_t addr);
 
 #endif /* __LCD_H */
