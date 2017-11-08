@@ -7,8 +7,8 @@
 // Version    : See GitHub repository jschornick/ecen5613 for revision details
 
 
-void eeprom_write(uint8_t page, uint8_t addr, uint8_t data);
+void eeprom_write(uint16_t addr, uint8_t data);
 
-void eeprom_read(uint8_t page, uint8_t addr, uint8_t *data);
+void eeprom_read(uint16_t addr, uint8_t *data);
 
 uint8_t eeprom_busy(void);

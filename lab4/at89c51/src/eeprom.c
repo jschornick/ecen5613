@@ -10,10 +10,10 @@
 #include "i2c.h"
 
 #define EEPROM_DEVICE_ID  0xA0
-#define EEPROM_READ(page)  ( (page<<1) | EEPROM_DEVICE_ID | I2C_READ)
-#define EEPROM_WRITE(page) ( (page<<1) | EEPROM_DEVICE_ID | I2C_WRITE)
+#define EEPROM_READ(page)  ( ((page)<<1) | EEPROM_DEVICE_ID | I2C_READ)
+#define EEPROM_WRITE(page) ( ((page)<<1) | EEPROM_DEVICE_ID | I2C_WRITE)
 
-void eeprom_write(uint8_t page, uint8_t addr, uint8_t data)
+void eeprom_write_p(uint8_t page, uint8_t addr, uint8_t data)
 {
   i2c_start();
 
@@ -25,7 +25,33 @@ void eeprom_write(uint8_t page, uint8_t addr, uint8_t data)
   i2c_stop();
 }
 
-void eeprom_read(uint8_t page, uint8_t addr, uint8_t *data)
+void eeprom_write(uint16_t addr, uint8_t data)
+{
+  i2c_start();
+
+  i2c_send(EEPROM_WRITE(addr>>8));
+  // TODO: check ACK/NACK status after sends
+  i2c_send(addr&0xff);
+  i2c_send(data);
+
+  i2c_stop();
+}
+
+
+void eeprom_read(uint16_t addr, uint8_t *data)
+{
+  // send register address to eerpom
+  i2c_start();
+  i2c_send(EEPROM_WRITE(addr>>8));
+  i2c_send(addr&0xff);
+
+  // ask eeprom for a byte
+  i2c_start();
+  i2c_send(EEPROM_READ(addr>>8));
+  i2c_read(data);
+  i2c_stop();
+}
+void eeprom_read_p(uint8_t page, uint8_t addr, uint8_t *data)
 {
   // send register address to eerpom
   i2c_start();

@@ -15,7 +15,7 @@
 #include "lcd.h"
 #include "eeprom.h"
 
-#define printf printf_tiny
+#define printf printf
 
 #define NIBBLE_TO_ASCII(x) ( (x)<10 ? (x)+'0' : (x)+'A'-10 )
 
@@ -25,7 +25,7 @@ void dump_screen(void)
   uint8_t c;
   uint8_t addr;
 
-  printf("  01234567890ABCDEF\r\n");
+  printf("  0123456789ABCDEF\r\n");
   printf(" ------------------\r\n");
 
   addr = lcd_getaddr();
@@ -103,28 +103,6 @@ void dump_cgram(void)
   putchar('\n');
 }
 
-
-// Function: read_hex
-//
-// Reads a hex value (0-9a-f) from the serial port.
-//
-// Returns: A 8-bit value (0-15) read from serial
-uint8_t read_hex(void) {
-  uint16_t val = 0;
-  char c;
-  while( val == 0 ) {
-    c = getchar();
-    if ( (c >= '0') && (c <= '9') ) {
-      putchar(c);
-      val = c - '0';
-    }
-    if ( (c >= 'a') && (c <= 'f') ) {
-      val = c - ('a' - 10);
-      putchar(c);
-    }
-  }
-  return val;
-}
 
 
 #define ASCII_ESC 27
@@ -219,6 +197,10 @@ void cmd_type(void)
 #define KEY_SCREEN   'S'  // Dump LCD Screen contents
 #define KEY_TYPE     'T'  // Type on LCD
 #define KEY_CLEAR    'C'  // Clear the LCD
+#define KEY_CUSTOM   'N'  // New custom character
+#define KEY_EE_WRITE 'W'  // Write byte to EEPROM
+#define KEY_EE_READ  'R'  // Read byte from EEPROM
+#define KEY_EE_DUMP  'E'  // Dump EEPROM
 
 
 void lcd_welcome(void)
@@ -260,17 +242,133 @@ void lcd_welcome(void)
 
 }
 
+// Function: read_hex
+//
+// Reads a hex value (0-9a-f) from the serial port.
+//
+// Returns: A 8-bit value (0-15) read from serial
+uint8_t read_hex(void) {
+  uint8_t val = 0xff;
+  char c;
+  while( val == 0xff ) {
+    c = getchar();
+    if ( (c >= '0') && (c <= '9') ) {
+      putchar(c);
+      val = c - '0';
+    }
+    c &= ~0x20;  // capitalize
+    if ( (c >= 'A') && (c <= 'F') ) {
+      val = c - ('A' - 10);
+      putchar(c);
+    }
+  }
+  return val;
+}
+
+uint16_t read_hex_n(uint8_t n)
+{
+  uint8_t i = 0;
+  uint16_t val = 0;
+  for(i = 0; i<n; i++) {
+    val <<= 4;
+    val += read_hex();
+  }
+  return val;
+}
+
+void cmd_new_char(void)
+{
+  printf("Character creator...");
+}
+
+void cmd_ee_write(void)
+{
+  uint16_t addr;
+  uint8_t val;
+  printf("\r\nEEPROM address to write (0xABC) ? 0x");
+  addr = read_hex_n(3);
+  printf("\r\nEEPROM value (0xDE) ? 0x");
+  val = read_hex_n(2);
+  printf("\r\nWriting %x to address %x... ", val, addr);
+  eeprom_write(addr,val);
+  printf("done\r\n");
+}
+
+void cmd_ee_read(void)
+{
+  uint16_t addr;
+  uint8_t data;
+  /* uint8_t nacks = 0; */
+
+  printf("\r\nEEPROM address to read (0xABC) ? 0x");
+  addr = read_hex_n(3);
+  data = 0;
+  while( eeprom_busy() ) {nacks++; };
+  eeprom_read(addr,&data);
+  putchar('\r');
+  putchar('\n');
+  putchar(NIBBLE_TO_ASCII(addr>>8));
+  putchar(NIBBLE_TO_ASCII((addr&0xff)>>4));
+  putchar(NIBBLE_TO_ASCII(addr&0xf));
+  putchar(':');
+  putchar(' ');
+  putchar(NIBBLE_TO_ASCII(data>>4));
+  putchar(NIBBLE_TO_ASCII(data&0xf));
+  /* printf("\r\n(%d nacks)\r\n", nacks); */
+}
+
+void cmd_ee_dump(void)
+{
+  uint16_t addr = 0;
+  uint16_t start_addr = 0;
+  uint16_t end_addr = 0;
+  uint8_t data;
+
+  printf("\r\nEEPROM start address: 0xABC = 0x");
+  start_addr = read_hex_n(3);
+  printf("\r\nEEPROM end address  : 0xDEF = 0x");
+  end_addr = read_hex_n(3);
+
+  printf("\r\n      0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F");
+  printf("\r\n     -----------------------------------------------");
+  for( addr = start_addr & 0xff0 ; addr <= end_addr; addr++) {
+    if ((addr & 0xf) == 0) {
+      putchar('\r');
+      putchar('\n');
+      putchar(NIBBLE_TO_ASCII(addr>>8));
+      putchar(NIBBLE_TO_ASCII((addr&0xff)>>4));
+      putchar(NIBBLE_TO_ASCII(addr&0xf));
+      putchar(':');
+    }
+    putchar(' ');
+    eeprom_read(addr, &data);
+    if(addr >= start_addr) {
+      putchar(NIBBLE_TO_ASCII(data>>4));
+      putchar(NIBBLE_TO_ASCII(data&0xf));
+    } else {
+      putchar('.');
+      putchar('.');
+    }
+  }
+  putchar('\r');
+  putchar('\n');
+}
+
 // Function: display_menu
 //
 // Presents the user a simple menu of commands to choose from.
 void display_menu(void)
 {
   printf("\r\n=== Lab 4 Menu ===\r\n\r\n");
-  printf(" %c - Dump LCD screen\r\n", KEY_SCREEN);
-  printf(" %c - Dump DDRAM\r\n", KEY_DDRAM);
-  printf(" %c - Dump CGRAM\r\n", KEY_CGRAM);
-  printf(" %c - Type on LCD\r\n", KEY_TYPE);
-  printf(" %c - Clear the LCD\r\n", KEY_CLEAR);
+  printf(" %c - LCD: Type on screen\r\n", KEY_TYPE);
+  printf(" %c - LCD: Screen contents\r\n", KEY_SCREEN);
+  printf(" %c - LCD: Custom character\r\n", KEY_CUSTOM);
+  printf(" %c - LCD: Dump DDRAM\r\n", KEY_DDRAM);
+  printf(" %c - LCD: Dump CGRAM\r\n", KEY_CGRAM);
+  printf(" %c - LCD: Clear\r\n", KEY_CLEAR);
+  printf(" %c - EEPROM: Write byte\r\n", KEY_EE_WRITE);
+  printf(" %c - EEPROM Read byte\r\n", KEY_EE_READ);
+  printf(" %c - EEPROM: Dump memory\r\n", KEY_EE_DUMP);
 }
 
 // Function: main
@@ -279,8 +377,6 @@ void display_menu(void)
 void main()
 {
   char c;
-  /* uint8_t data; */
-  uint16_t i = 0;
 
   P1_2 = 0; // led on
   serial_init_brg();
@@ -324,24 +420,22 @@ void main()
     case KEY_CLEAR:
       lcd_clear();
       break;
+    case KEY_CUSTOM:
+      cmd_new_char();
+      break;
+    case KEY_EE_WRITE:
+      cmd_ee_write();
+      break;
+    case KEY_EE_READ:
+      cmd_ee_read();
+      break;
+    case KEY_EE_DUMP:
+      cmd_ee_dump();
+      break;
     default:
       display_menu();
       break;
     }
   }
-
-
-  /* lcd_gotoxy(0,0); */
-  /* lcd_putch(0); */
-  /* lcd_putch(0); */
-
-  /* printf("Performing eeprom write/read... "); */
-  /* eeprom_write(0,0x42,0x23); */
-  /* //printf("done\r\n"); */
-  /* //printf("Performing eeprom write... "); */
-  /* data = 0; */
-  /* while( eeprom_busy() ) {i++; }; */
-  /* eeprom_read(0,0x42,&data); */
-  /* printf("got: %02x after %u NACKs\r\n", data, i); */
 
 }
