@@ -284,18 +284,44 @@ void display_char(uint8_t rows[])
   uint8_t i;
   uint8_t bitmask;
   uint8_t byte;
-  /* lcd_cgram_addr(val<<3); */
   for(i=0; i<8; i++) {
     putchar(i+'0');
     putchar(':');
     putchar(' ');
-    /* c = lcd_getchar();  // get one byte from CGRAM */
     byte = rows[i];
     for(bitmask=1; bitmask <= 16 ; bitmask <<= 1) {
       if(byte & bitmask) {
         putchar('x');
       } else {
         putchar(' ');
+      }
+    }
+    putchar('\r');
+    putchar('\n');
+  }
+}
+
+void display_all_chars()
+{
+  uint8_t row;
+  uint8_t charnum;
+  uint8_t bitmask;
+  uint8_t byte;
+
+ printf("    0      1      2      3      4      5      6      7\r\n");
+ printf("  -----  -----  -----  -----  -----  -----  -----  -----\r\n");
+  for(row=0; row<8; row++) {
+    for(charnum = 0; charnum<8; charnum++) {
+      putchar(' ');
+      putchar(' ');
+      lcd_cgram_addr( (charnum<<3) + row);
+      byte = lcd_getchar();
+      for(bitmask=1; bitmask <= 16 ; bitmask <<= 1) {
+        if(byte & bitmask) {
+          putchar('x');
+        } else {
+          putchar(' ');
+        }
       }
     }
     putchar('\r');
@@ -312,15 +338,17 @@ void cmd_new_char(void)
   uint8_t bitval;
   uint8_t rows[8];
 
-  printf("Choose a character code (0-7): ");
+  display_all_chars();
+  printf("\r\nChoose a character code (0-7): ");
   while( charnum == 0xff ) {
     c = getchar();
     if ( (c >= '0') && (c <= '7') ) {
       charnum = c - '0';
     }
   }
-
+  printf("\r\n");
   lcd_load_char(charnum, rows);
+
   do {
     printf("\r\nCharacter #%u", charnum);
     printf("\r\n");
