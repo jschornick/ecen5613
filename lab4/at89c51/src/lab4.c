@@ -15,7 +15,7 @@
 #include "lcd.h"
 #include "eeprom.h"
 
-#define printf printf
+#define printf printf_tiny
 
 #define NIBBLE_TO_ASCII(x) ( (x)<10 ? (x)+'0' : (x)+'A'-10 )
 
@@ -104,9 +104,9 @@ void dump_cgram(void)
 }
 
 
-
-#define ASCII_ESC 27
-#define ASCII_ETX 3
+#define ASCII_ESC 0x1b
+#define ASCII_ETX 0x03
+#define ASCII_CR  0x0d
 
 #define CS_UP    'A'
 #define CS_DOWN  'B'
@@ -125,6 +125,7 @@ void cmd_type(void)
   __data uint8_t row, col;
 
   printf("Type a message on the LCD, ^C to exit...\r\n");
+  lcd_gotoaddr(0x0);
   while (c != ASCII_ETX) {
     c = getchar();  // block until input
     switch (mode) {
@@ -151,7 +152,7 @@ void cmd_type(void)
         break;
       default:
         if( (c>='0') && (c<='7')) {
-          lcd_putch(c-'0');  // CGRAM character
+          lcd_putchar(c-'0');  // CGRAM character
         } else {
           printf("! Unknown escape sequence: %u ('%c')\r\n",c,c);
         }
@@ -209,33 +210,33 @@ void lcd_welcome(void)
 {
   // Smiley face
   lcd_cgram_addr(0x0);
-  lcd_putch(0x1b);
-  lcd_putch(0x1b);
-  lcd_putch(0x00);
-  lcd_putch(0x04);
-  lcd_putch(0x04);
-  lcd_putch(0x11);
-  lcd_putch(0x0e);
-  lcd_putch(0x00);
-  lcd_putch(0x1b);
+  lcd_putchar(0x1b);
+  lcd_putchar(0x1b);
+  lcd_putchar(0x00);
+  lcd_putchar(0x04);
+  lcd_putchar(0x04);
+  lcd_putchar(0x11);
+  lcd_putchar(0x0e);
+  lcd_putchar(0x00);
+  lcd_putchar(0x1b);
 
   // Corner decorations
   lcd_gotoxy(0,0);
-  lcd_putch(0);
+  lcd_putchar(0);
   lcd_gotoxy(1,1);
-  lcd_putch(0);
+  lcd_putchar(0);
   lcd_gotoxy(2,1);
-  lcd_putch(0);
+  lcd_putchar(0);
   lcd_gotoxy(3,0);
-  lcd_putch(0);
+  lcd_putchar(0);
   lcd_gotoxy(0,15);
-  lcd_putch(0);
+  lcd_putchar(0);
   lcd_gotoxy(1,14);
-  lcd_putch(0);
+  lcd_putchar(0);
   lcd_gotoxy(2,14);
-  lcd_putch(0);
+  lcd_putchar(0);
   lcd_gotoxy(3,15);
-  lcd_putch(0);
+  lcd_putchar(0);
 
   lcd_gotoxy(1,3);
   lcd_putstr("Welcome to");
@@ -278,9 +279,75 @@ uint16_t read_hex_n(uint8_t n)
   return val;
 }
 
+void display_char(uint8_t rows[])
+{
+  uint8_t i;
+  uint8_t bitmask;
+  uint8_t byte;
+  /* lcd_cgram_addr(val<<3); */
+  for(i=0; i<8; i++) {
+    putchar(i+'0');
+    putchar(':');
+    putchar(' ');
+    /* c = lcd_getchar();  // get one byte from CGRAM */
+    byte = rows[i];
+    for(bitmask=1; bitmask <= 16 ; bitmask <<= 1) {
+      if(byte & bitmask) {
+        putchar('x');
+      } else {
+        putchar(' ');
+      }
+    }
+    putchar('\r');
+    putchar('\n');
+  }
+}
+
 void cmd_new_char(void)
 {
-  printf("Character creator...");
+  char c;
+  uint8_t charnum = 0xff;
+  uint8_t row;
+  uint8_t bits;
+  uint8_t bitval;
+  uint8_t rows[8];
+
+  printf("Choose a character code (0-7): ");
+  while( charnum == 0xff ) {
+    c = getchar();
+    if ( (c >= '0') && (c <= '7') ) {
+      charnum = c - '0';
+    }
+  }
+
+  lcd_load_char(charnum, rows);
+  do {
+    printf("\r\nCharacter #%u", charnum);
+    printf("\r\n");
+    display_char(rows);
+    printf("\r\nSelect row to edit (0-7), or return when done: ");
+    c = getchar();
+    if ( (c >= '0') && (c <= '7') ) {
+      putchar(c);
+      row = c - '0';
+      printf("\r\nEnter 5 new bits (e.g., 01010): ");
+      bits = 0;
+      bitval = 0;
+      do {
+        c = getchar();
+        if( (c == '0') ||  (c == '1') ) {
+          putchar(c);
+          bitval >>= 1;
+          bitval += (c - '0')<<4;
+          bits++;
+        }
+      } while (bits < 5);
+      printf("\r\n");
+      rows[row] = bitval;
+    }
+  } while( c != ASCII_CR );
+  lcd_create_char(charnum, rows);
+  printf("\r\nSaved character #%u:\r\n", charnum);
 }
 
 void cmd_ee_write(void)
@@ -363,11 +430,15 @@ void cmd_save(void)
   ee_addr = read_hex_n(3);
   printf("\r\nSaving... ");
   lcd_gotoaddr(0x0);
-  for(i=0; i<= LCD_COLS*2; i++) {
+  for(i=0; i < LCD_COLS*2; i++) {
     eeprom_write(ee_addr++, lcd_getchar());
   }
   lcd_gotoaddr(0x40);
-  for(i=0; i<= LCD_COLS*2; i++) {
+  for(i=0; i < LCD_COLS*2; i++) {
+    eeprom_write(ee_addr++, lcd_getchar());
+  }
+  lcd_cgram_addr(0x0);
+  for(i=0; i<= 64; i++) {
     eeprom_write(ee_addr++, lcd_getchar());
   }
   printf("done!\r\n");
@@ -384,14 +455,19 @@ void cmd_load(void)
   ee_addr = read_hex_n(3);
   printf("\r\nLoading... ");
   lcd_gotoaddr(0x0);
-  for(i=0; i<= LCD_COLS*2; i++) {
+  for(i=0; i < LCD_COLS*2; i++) {
     eeprom_read(ee_addr++, &data);
-    lcd_putch(data);
+    lcd_putchar(data);
   }
   lcd_gotoaddr(0x40);
-  for(i=0; i<= LCD_COLS*2; i++) {
+  for(i=0; i < LCD_COLS*2; i++) {
     eeprom_read(ee_addr++, &data);
-    lcd_putch(data);
+    lcd_putchar(data);
+  }
+  lcd_cgram_addr(0x0);
+  for(i=0; i< 64; i++) {
+    eeprom_read(ee_addr++, &data);
+    lcd_putchar(data);
   }
   printf("done!\r\n");
 }
@@ -463,6 +539,7 @@ void main()
       break;
     case KEY_CLEAR:
       lcd_clear();
+      printf("\r\nLCD cleared\r\n");
       break;
     case KEY_CUSTOM:
       cmd_new_char();

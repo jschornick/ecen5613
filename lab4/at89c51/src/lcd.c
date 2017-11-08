@@ -115,7 +115,7 @@ void lcd_gotoxy(uint8_t row, uint8_t column)
 // Function: lcd_putch
 //
 // Writes the specified character to the current LCD cursor position.
-void lcd_putch(char cc)
+void lcd_putchar(char cc)
 {
   lcd_busywait();
   LCD_DATA_WR = cc;
@@ -173,7 +173,7 @@ void lcd_putstr(char *ss)
   lcd_getxy(&row, &col);
 
   while(*ss) {
-    lcd_putch(*ss++);
+    lcd_putchar(*ss++);
     if (++col == LCD_COLS) {
       col = 0;
       row = (row+1) % LCD_ROWS;
@@ -190,4 +190,21 @@ void lcd_clear(void)
 {
   lcd_busywait();
   LCD_CMD = LCD_CMD_CLEAR;
+}
+
+
+void lcd_load_char(uint8_t ccode, uint8_t row_vals[]) {
+  uint8_t i;
+  lcd_cgram_addr(ccode<<3);
+  for(i=0; i<8; i++) {
+    row_vals[i] = lcd_getchar();
+  }
+}
+
+void lcd_create_char(uint8_t ccode, uint8_t row_vals[]) {
+  uint8_t i;
+  lcd_cgram_addr(ccode<<3);
+  for(i=0; i<8; i++) {
+    lcd_putchar(row_vals[i]);
+  }
 }

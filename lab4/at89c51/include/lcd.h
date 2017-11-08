@@ -118,7 +118,7 @@ void lcd_gotoxy(uint8_t row, uint8_t column);
 // Function: lcd_putch
 //
 // Writes the specified character to the current LCD cursor position.
-void lcd_putch(char cc);
+void lcd_putchar(char cc);
 
 // Function: lcd_putstr
 //
@@ -134,5 +134,9 @@ void lcd_putstr(char *ss);
 void lcd_clear(void);
 
 void lcd_cgram_addr(uint8_t addr);
+
+void lcd_load_char(uint8_t ccode, uint8_t row_vals[]);
+
+void lcd_create_char(uint8_t ccode, uint8_t row_vals[]);
 
 #endif /* __LCD_H */
