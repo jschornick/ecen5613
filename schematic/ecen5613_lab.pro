@@ -1,4 +1,4 @@
-update=Fri 20 Oct 2017 12:40:05 AM MDT
+update=Fri 10 Nov 2017 09:23:57 AM MST
 version=1
 last_client=kicad
 [pcbnew]
@@ -63,7 +63,7 @@ LibName31=switches
 [schematic_editor]
 version=1
 PageLayoutDescrFile=page_layout.kicad_wks
-PlotDirectoryName=../../lab2/schornick_lab_2/schematic/
+PlotDirectoryName=../../lab4/
 SubpartIdSeparator=0
 SubpartFirstId=65
 NetFmtName=

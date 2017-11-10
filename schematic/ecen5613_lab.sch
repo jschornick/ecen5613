@@ -993,10 +993,23 @@ Wire Wire Line
 $Sheet
 S 9000 2050 550  350 
 U 5A001753
-F0 "LCD" 39
-F1 "lcd.sch" 39
+F0 "peripherals" 39
+F1 "peripherals.sch" 39
 F2 "AD[0..7]" B L 9000 2200 39 
 $EndSheet
 Wire Bus Line
 	8500 2200 9000 2200
+Text GLabel 1900 3700 0    47   BiDi ~ 0
+SCL
+Text GLabel 1900 3850 0    47   BiDi ~ 0
+SDA
+Wire Wire Line
+	1900 3700 2000 3700
+Wire Wire Line
+	1900 3850 2000 3850
+NoConn ~ 2000 3550
+NoConn ~ 2000 3400
+NoConn ~ 2000 3250
+NoConn ~ 2000 2950
+NoConn ~ 2000 2800
 $EndSCHEMATC
