@@ -9,6 +9,9 @@
 #include <stdint.h>
 #include "delay.h"
 
+// Function: delay_ms
+//
+// Delays aproximately ms milliseconds
 void delay_ms(uint8_t ms)
 {
   uint8_t i = ms<<2;  // 250us * 4 = 1 ms

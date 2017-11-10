@@ -7,8 +7,28 @@
 // Version    : See GitHub repository jschornick/ecen5613 for revision details
 
 
+// Function eeprom_write
+//
+// Writes an 8-bit value to the specified EEPROM address
+//
+// Params:
+//   addr: 11-bit memory address (3-bit page, 8-bit address)
+//   data: 8-bit value to write to address
 void eeprom_write(uint16_t addr, uint8_t data);
 
+
+// Function eeprom_read
+//
+// Reads an 8-bit value from the specified EEPROM address
+//
+// Params:
+//   addr: 11-bit memory address (3-bit page, 8-bit address)
+//   data: address to store the 8-bit value read
 void eeprom_read(uint16_t addr, uint8_t *data);
 
+
+// Function eeprom_busy
+//
+// Return true if the EEPROM is busy with an operation, based on whether or not an ACK is received.
+// An ACK is a low puslse, so reading 0 is not busy.
 uint8_t eeprom_busy(void);

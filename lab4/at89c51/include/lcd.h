@@ -109,16 +109,19 @@ uint8_t lcd_getchar(void);
 
 void lcd_getxy(uint8_t *row, uint8_t *col);
 
+
 // Function: lcd_gotoxy
 //
 // Sets the cursor to the LCD DDRAM address corresponding to the specified row
 // and column. Location (0,0) is the top left corner of the LCD screen.
 void lcd_gotoxy(uint8_t row, uint8_t column);
 
+
 // Function: lcd_putch
 //
 // Writes the specified character to the current LCD cursor position.
 void lcd_putchar(char cc);
+
 
 // Function: lcd_putstr
 //
@@ -133,10 +136,31 @@ void lcd_putstr(char *ss);
 // Clears the LCD using the HD44780 Clear display instruction.
 void lcd_clear(void);
 
+
+// Function: lcd_cgram_addr
+//
+// Sts the current address pointer to a CGRAM address
 void lcd_cgram_addr(uint8_t addr);
 
+
+// Function: lcd_load_char
+//
+// Loads a 5x8 custom character from CGRAM and returns it
+// in an 8-byte array.
+//
+// Params:
+//   ccode: the custom character code, 0-7
+//   row_vals: array (address) where the character data is returned
 void lcd_load_char(uint8_t ccode, uint8_t row_vals[]);
 
+
+// Function: lcd_create_char
+//
+// Saves a 5x8 custom character into CGRAM
+//
+// Params:
+//   ccode: the custom character code, 0-7
+//   row_vals: 8-byte array (address) of character data
 void lcd_create_char(uint8_t ccode, uint8_t row_vals[]);
 
 #endif /* __LCD_H */

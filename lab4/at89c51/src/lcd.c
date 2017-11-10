@@ -28,6 +28,7 @@ volatile __xdata __at (0xF001) uint8_t LCD_STAT;     // Read status (RW=1, RS=0)
 volatile __xdata __at (0xF002) uint8_t LCD_DATA_WR;  // Write data, (RW=0, RS=1)
 volatile __xdata __at (0xF003) uint8_t LCD_DATA_RD;  // Read data (RW=1, RS=1)
 
+
 // Function: lcd_init
 //
 // Initializes the LCD
@@ -63,6 +64,7 @@ void lcd_init(void)
 
 }
 
+
 // Function: lcd_busywait
 //
 // Polls the LCD busy flag, blocks until until the LCD controller is ready to
@@ -72,6 +74,7 @@ void lcd_busywait(void)
   while (LCD_STAT & LCD_BUSY_MASK);
 }
 
+
 // Function: lcdgotoaddr
 //
 // Sets the cursor to the specified LCD DDRAM address.
@@ -80,6 +83,7 @@ void lcd_gotoaddr(uint8_t addr)
   lcd_busywait();
   LCD_CMD = LCD_CMD_DDRAM | (addr & LCD_DDRAM_MASK);
 }
+
 
 // Function: lcd_gotoxy
 //
@@ -112,6 +116,7 @@ void lcd_gotoxy(uint8_t row, uint8_t column)
   }
 }
 
+
 // Function: lcd_putch
 //
 // Writes the specified character to the current LCD cursor position.
@@ -131,7 +136,6 @@ void lcd_getxy(uint8_t *row, uint8_t *col)
 {
   uint8_t addr;
   addr = lcd_getaddr();
-  /* printf("Addr: %02x = ", addr); */
 
   *row = 0;
   if (addr >= 0x40) {
@@ -143,9 +147,13 @@ void lcd_getxy(uint8_t *row, uint8_t *col)
     *row += 2;
   }
   *col = addr;
-  /* printf("(%u,%u)\r\n", *row, *col); */
 }
 
+
+
+// Function: lcd_getaddr
+//
+// Gets the current address pointer
 uint8_t lcd_getaddr()
 {
   lcd_busywait();
@@ -155,11 +163,16 @@ uint8_t lcd_getaddr()
   return (LCD_STAT & LCD_DDRAM_MASK);
 }
 
+
+// Function: lcd_cgram_addr
+//
+// Sts the current address pointer to a CGRAM address
 void lcd_cgram_addr(uint8_t addr)
 {
   lcd_busywait();
   LCD_CMD = LCD_CMD_CGRAM | (addr & LCD_CGRAM_MASK);
 }
+
 
 // Function: lcd_putstr
 //
@@ -182,6 +195,7 @@ void lcd_putstr(char *ss)
   }
 }
 
+
 // Function: lcd_clear
 //
 // Clears the LCD using the HD44780 Clear display instruction.
@@ -193,16 +207,36 @@ void lcd_clear(void)
 }
 
 
+// Function: lcd_load_char
+//
+// Loads a 5x8 custom character from CGRAM and returns it
+// in an 8-byte array.
+//
+// Params:
+//   ccode: the custom character code, 0-7
+//   row_vals: array (address) where the character data is returned
 void lcd_load_char(uint8_t ccode, uint8_t row_vals[]) {
   uint8_t i;
+  // CGRAM addresses are in the form ABC DEF, where
+  // where ABC is the character code, and DEF are the individual rows.
   lcd_cgram_addr(ccode<<3);
   for(i=0; i<8; i++) {
     row_vals[i] = lcd_getchar();
   }
 }
 
+
+// Function: lcd_create_char
+//
+// Saves a 5x8 custom character into CGRAM
+//
+// Params:
+//   ccode: the custom character code, 0-7
+//   row_vals: 8-byte array (address) of character data
 void lcd_create_char(uint8_t ccode, uint8_t row_vals[]) {
   uint8_t i;
+  // CGRAM addresses are in the form ABC DEF, where
+  // where ABC is the character code, and DEF are the individual rows.
   lcd_cgram_addr(ccode<<3);
   for(i=0; i<8; i++) {
     lcd_putchar(row_vals[i]);

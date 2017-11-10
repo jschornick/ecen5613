@@ -10,29 +10,30 @@
 #include "i2c.h"
 #include "eeprom.h"
 
-#define EEPROM_DEVICE_ID  0xA0
+#define EEPROM_DEVICE_ID  0xA0  /* standard EEPROM device id */
+
+// The top 3 bits of the 11-bit EEPROM address are actually the page number,
+// sent as the top 3-bits of the 8-bit device address.
+// I2C standard reads have the LSB = 1, writes have LSB = 0.
 #define EEPROM_READ(page)  ( ((page)<<1) | EEPROM_DEVICE_ID | I2C_READ)
 #define EEPROM_WRITE(page) ( ((page)<<1) | EEPROM_DEVICE_ID | I2C_WRITE)
 
-void eeprom_write_p(uint8_t page, uint8_t addr, uint8_t data)
-{
-  i2c_start();
 
-  i2c_send(EEPROM_WRITE(page));
-  // TODO: check ACK/NACK status after sends
-  i2c_send(addr);
-  i2c_send(data);
-
-  i2c_stop();
-}
-
+// Function eeprom_write
+//
+// Writes an 8-bit value to the specified EEPROM address
+//
+// Params:
+//   addr: 11-bit memory address (3-bit page, 8-bit address)
+//   data: 8-bit value to write to address
 void eeprom_write(uint16_t addr, uint8_t data)
 {
+  // Wait for not busy
   while (eeprom_busy());
   i2c_start();
 
   i2c_send(EEPROM_WRITE(addr>>8));
-  // TODO: check ACK/NACK status after sends
+  // TODO: check ACK/NACK status after each send
   i2c_send(addr&0xff);
   i2c_send(data);
 
@@ -40,35 +41,34 @@ void eeprom_write(uint16_t addr, uint8_t data)
 }
 
 
+// Function eeprom_read
+//
+// Reads an 8-bit value from the specified EEPROM address
+//
+// Params:
+//   addr: 11-bit memory address (3-bit page, 8-bit address)
+//   data: address to store the 8-bit value read
 void eeprom_read(uint16_t addr, uint8_t *data)
 {
+  // Wait for not busy
   while (eeprom_busy());
-  // send register address to eerpom
+  // send register address to EEPROM
   i2c_start();
   i2c_send(EEPROM_WRITE(addr>>8));
   i2c_send(addr&0xff);
 
-  // ask eeprom for a byte
+  // Ask EEPROM for a byte
   i2c_start();
   i2c_send(EEPROM_READ(addr>>8));
   i2c_read(data);
   i2c_stop();
 }
-void eeprom_read_p(uint8_t page, uint8_t addr, uint8_t *data)
-{
-  // send register address to eerpom
-  i2c_start();
-  i2c_send(EEPROM_WRITE(page));
-  i2c_send(addr);
 
-  // ask eeprom for a byte
-  i2c_start();
-  i2c_send(EEPROM_READ(page));
-  i2c_read(data);
-  i2c_stop();
-}
 
-// ack is low pulse, returns 0 when not busy
+// Function eeprom_busy
+//
+// Return true if the EEPROM is busy with an operation, based on whether or not an ACK is received.
+// An ACK is a low puslse, so reading 0 is not busy.
 uint8_t eeprom_busy(void)
 {
   i2c_start();

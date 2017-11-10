@@ -3,6 +3,9 @@
 //
 // Generic I2C functions
 //
+// These are low level I2C functions which should be called by the drivers for
+// specific I2C devices.
+//
 // Compilation: Supports SDCC v3.5+, see included makefile for invocation
 // Version    : See GitHub repository jschornick/ecen5613 for revision details
 
@@ -42,7 +45,12 @@ void i2c_stop(void)
   // bus now IDLE: both SCL/SDA high
 }
 
+
+// Function: i2c_send
+//
 // Send 8-bits over I2C, MSB first
+//
+// Returns the ACK/NACK value received as bit 9
 uint8_t i2c_send(uint8_t data)
 {
   uint8_t i;
@@ -62,6 +70,9 @@ uint8_t i2c_send(uint8_t data)
   return data;    // return ACK signal
 }
 
+// Function: i2c_read
+//
+// Read 8-bits over I2C, MSB first
 void i2c_read(uint8_t *data) {
   uint8_t i;
   for(i = 0; i<8; i++) {

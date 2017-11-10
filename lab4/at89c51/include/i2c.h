@@ -11,16 +11,40 @@
 
 #include "at89c51rc2.h"
 
+// Use two GPIO lines for I2C clock and data
 #define I2C_SCL P1_6
 #define I2C_SDA P1_7
 
+// I2C LSB determines read/write to address
 #define I2C_READ   0x1
 #define I2C_WRITE  0x0
 
-void i2c_start(void);
-void i2c_stop(void);
-uint8_t i2c_send(uint8_t data);
-void i2c_read(uint8_t *data);
 
+// Function: i2c_start
+//
+// Generate I2C start condition
+// High to low transition of SDA when SCL is high
+void i2c_start(void);
+
+
+// Function: i2c_stop
+//
+// Generate I2C stop condition
+// Low to high transition of SDA when SCL is high
+void i2c_stop(void);
+
+
+// Function: i2c_send
+//
+// Send 8-bits over I2C, MSB first
+//
+// Returns the ACK/NACK value received as bit 9
+uint8_t i2c_send(uint8_t data);
+
+
+// Function: i2c_read
+//
+// Read 8-bits over I2C, MSB first
+void i2c_read(uint8_t *data);
 
 #endif /* __I2C_H */
