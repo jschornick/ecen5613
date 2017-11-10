@@ -3,8 +3,17 @@
 //
 // Implements the required functionality for ECEN5613 Lab 4.
 //
-
-// Specifically, ...
+// Specifically, this program presents a menu over serial which
+// can be used to interact with the LCD and I2C EEPROM.
+//
+// LCD features include a typing interface, mirroring of screen contents,
+// dumping DDRAM, dumping CGRAM, and custom character creation.
+//
+// EEPROM features include reading and writing of individual bytes, as well
+// as dumping a memory range.
+//
+// Two final commands allow the LCD RAM to be saved to EEPROM and reloaed
+// at a later time.
 //
 // Compilation: Supports SDCC v3.6+, see included makefile for invocation
 // Version    : See GitHub repository jschornick/ecen5613 for revision details
@@ -16,8 +25,10 @@
 #include "lcd.h"
 #include "eeprom.h"
 
+// Only load the simplest printf since we're doing hex padding manually.
 #define printf printf_tiny
 
+// Quickly convert a 4-bit value (0x0-0xF) into ASCII
 #define NIBBLE_TO_ASCII(x) ( (x)<10 ? (x)+'0' : (x)+'A'-10 )
 
 // Command key definitions for the menu
@@ -49,6 +60,11 @@
 #define TYPE_MODE_ESC  1  /* escape sequence */
 #define TYPE_MODE_CS   2  /* control sequence */
 
+
+// Function: dump_screen
+//
+// Show the screen contents of the LCD over the serial port.
+// The original LCD address will be restored after reading.
 void dump_screen(void)
 {
   uint8_t row, col;
@@ -79,6 +95,12 @@ void dump_screen(void)
   lcd_gotoaddr(addr);
 }
 
+
+// Function: dump_ddram
+//
+// Dump the LCD DDRAM as hex, 16 bytes per line. Each line is prefaced with the
+// 8-bit starting address. The original LCD address will be restored after
+// reading.
 void dump_ddram(void)
 {
   uint8_t addr = 0;
@@ -107,6 +129,12 @@ void dump_ddram(void)
   putchar('\n');
 }
 
+
+// Function: dump_cgram
+//
+// Dump the LCD CGRAM as hex, 16 bytes per line. Each line is prefaced with the
+// 8-bit starting address. The original LCD address will be restored after
+// reading.
 void dump_cgram(void)
 {
   uint8_t i;
@@ -134,8 +162,19 @@ void dump_cgram(void)
 }
 
 
+// Function: cmd_type
+//
+// Allow the user to type onto the LCD by inputing characters over serial.
+//
+// Printable ASCII characters are send directly to the LCD. A escape sequences
+// are included for clearing the screen and inputting the LCD's custom
+// characters. Navigation is supported by interpretting control sequences for
+// the arrow keys.
+//
+// Escape and control sequences are handled via a rudimentary state machine.
 void cmd_type(void)
 {
+  // Use fast data access so that we minimize character loss at high input rates
   __data uint8_t mode = TYPE_MODE_NORM;
   __data char c = 0 ;
   __data char str[2] = {'\0', '\0'};
@@ -147,7 +186,9 @@ void cmd_type(void)
     c = getchar();  // block until input
     switch (mode) {
     case TYPE_MODE_NORM:
+      /* Normal mode, not in the middle of a sequence */
       if( (c>=32) && (c<=126)) {
+        // Printable ASCII, so send it out
         *str = c;
         lcd_putstr(str);
       } else if (c == ASCII_ESC) {
@@ -158,9 +199,11 @@ void cmd_type(void)
       /* reading escape character */
       switch (c) {
       case '[':
+        // Beginning of a control sequence
         mode = TYPE_MODE_CS;
         break;
       case 'c':
+        // Custom escape sequence for clear screen
         lcd_clear();
         mode = TYPE_MODE_NORM;
         break;
@@ -168,8 +211,9 @@ void cmd_type(void)
         printf("! Double-escape\r\n");
         break;
       default:
+        // Map each of the custom characters to a numeric escape sequence
         if( (c>='0') && (c<='7')) {
-          lcd_putchar(c-'0');  // CGRAM character
+          lcd_putchar(c-'0');  // CGRAM characters have value 0x0 to 0x7
         } else {
           printf("! Unknown escape sequence: %u ('%c')\r\n",c,c);
         }
@@ -178,9 +222,8 @@ void cmd_type(void)
       }
       break;
     case 2:
-      /* reading control sequeunce */
+      /* reading control sequeunce, escape+[+CSI */
       lcd_getxy(&row, &col);
-      //printf("Old pos: (%u,%u)\r\n", row, col);
       switch (c) {
       case CS_UP:
         row = (row + (LCD_ROWS-1)) % LCD_ROWS;
@@ -201,15 +244,19 @@ void cmd_type(void)
       default:
         printf("! Unknown control sequence: %u ('%c')\r\n",c,c);
       }
-      //printf("New pos: (%u,%u) @ %02x\r\n", row, col, lcd_getaddr());
       mode = TYPE_MODE_NORM;
     }
   } /* while !ETX */
 
 }
 
+
+// Function: lcd_welcome
+//
+// Print a friendly welcome message on the LCD.
 void lcd_welcome(void)
 {
+  // A 2x4 character smiley face as custom characters
   uint8_t smiley[][] = {{0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x03, 0x02},
                         {0x03, 0x0C, 0x10, 0x00, 0x00, 0x1F, 0x1D, 0x0E},
                         {0x18, 0x06, 0x01, 0x00, 0x00, 0x1F, 0x1D, 0x0E},
@@ -219,8 +266,9 @@ void lcd_welcome(void)
                         {0x00, 0x06, 0x0C, 0x18, 0x00, 0x01, 0x06, 0x18},
                         {0x08, 0x08, 0x10, 0x10, 0x00, 0x00, 0x00, 0x00} };
   uint8_t i;
+
   for(i = 0; i<8; i++) {
-  lcd_create_char(i, smiley[i]);
+    lcd_create_char(i, smiley[i]);
   }
 
   lcd_gotoxy(0,0);
@@ -239,9 +287,11 @@ void lcd_welcome(void)
   lcd_putstr("...stay cool!");
 }
 
+
 // Function: read_hex
 //
-// Reads a hex value (0-9a-f) from the serial port.
+// Reads a hex value (0-9a-f) from the serial port. Accepts both upper and
+// lowercase hex characters.
 //
 // Returns: A 8-bit value (0-15) read from serial
 uint8_t read_hex(void) {
@@ -262,6 +312,12 @@ uint8_t read_hex(void) {
   return val;
 }
 
+
+// Function: read_hex_n
+//
+// Reads n hex digits from the serial port, where n is from 1 to 4.
+//
+// Returns: A 16-bit value (0-16^n-1) read from serial
 uint16_t read_hex_n(uint8_t n)
 {
   uint8_t i = 0;
@@ -273,6 +329,11 @@ uint16_t read_hex_n(uint8_t n)
   return val;
 }
 
+
+// Function: display_char
+//
+// Displays a character from 8 bytes of character row data, using the same
+// format as an LCD custom character.
 void display_char(uint8_t rows[])
 {
   uint8_t i;
@@ -295,7 +356,11 @@ void display_char(uint8_t rows[])
   }
 }
 
-void display_all_chars()
+
+// Function: display_custom_chars
+//
+// Displays all 8 custom characters stored in CGRAM.
+void display_custom_chars()
 {
   uint8_t row;
   uint8_t charnum;
@@ -323,6 +388,10 @@ void display_all_chars()
   }
 }
 
+
+// Function: display_custom_chars
+//
+// Displays all 8 custom characters stored in CGRAM.
 void cmd_new_char(void)
 {
   char c;
@@ -332,7 +401,7 @@ void cmd_new_char(void)
   uint8_t bitval;
   uint8_t rows[8];
 
-  display_all_chars();
+  display_custom_chars();
   printf("\r\nChoose a character code (0-7): ");
   while( charnum == 0xff ) {
     c = getchar();
@@ -372,6 +441,11 @@ void cmd_new_char(void)
   printf("\r\nSaved character #%u:\r\n", charnum);
 }
 
+
+// Function cmd_ee_write
+//
+// Prompt the user for a 16-bit address and an 8-bit value in hex, then store
+// that value at the EEPROM address.
 void cmd_ee_write(void)
 {
   uint16_t addr;
@@ -385,6 +459,11 @@ void cmd_ee_write(void)
   printf("done\r\n");
 }
 
+
+// Function cmd_ee_read
+//
+// Prompt the user for a 16-bit address in hex, read the address location from
+// EEPROM and display the result.
 void cmd_ee_read(void)
 {
   uint16_t addr;
@@ -393,7 +472,6 @@ void cmd_ee_read(void)
   printf("\r\nEEPROM address to read (0xABC) ? 0x");
   addr = read_hex_n(3);
   data = 0;
-  eeprom_busy();
   eeprom_read(addr,&data);
   printf("\r\n");
   putchar(NIBBLE_TO_ASCII(addr>>8));
@@ -405,6 +483,12 @@ void cmd_ee_read(void)
   printf("\r\n");
 }
 
+
+// Function: cmd_ee_dump
+//
+// Prompt the user for an address range and display the EEPROM contents in that
+// range. Contents are displayed in the format AAA: DD DD ..., with a maximum of
+// 16 values per line.
 void cmd_ee_dump(void)
 {
   uint16_t addr = 0;
@@ -442,6 +526,11 @@ void cmd_ee_dump(void)
   putchar('\n');
 }
 
+
+// Function: cmd_save
+//
+// Prompt the user for a memory address and write all LCD RAM (DDRAM and CGRAM)
+// to EEPROM starting at that address.
 void cmd_save(void)
 {
   uint16_t ee_addr;
@@ -466,6 +555,10 @@ void cmd_save(void)
   printf("done!\r\n");
 }
 
+// Function: cmd_load
+//
+// Prompt the user for a memory address and load all LCD RAM (DDRAM and CGRAM)
+// from EEPROM starting at that address.
 void cmd_load(void)
 {
   uint16_t ee_addr;
@@ -494,6 +587,7 @@ void cmd_load(void)
   printf("done!\r\n");
 }
 
+
 // Function: display_menu
 //
 // Presents the user a simple menu of commands to choose from.
@@ -513,15 +607,16 @@ void display_menu(void)
   printf(" %c - COMBO: Load LCD <- EEPROM\r\n", KEY_LOAD);
 }
 
+
 // Function: main
 //
-// ...
+// Initialize hardware, then loop continuously while processesing serial input.
 void main()
 {
   char c;
 
-  P1_2 = 0; // led on
-  serial_init_brg();
+  P1_2 = 0; // green led on right awawy
+  serial_init_brg(); // use the internal baud rate generator for serial
 
   printf("\r\n");
   printf("-----------------------\n\r");
@@ -536,12 +631,12 @@ void main()
   printf("done!\r\n");
 
   lcd_welcome();
-
   display_menu();
+
   while(1) {
 
     printf("-> ");
-    c = getchar() & ~0x20;
+    c = getchar() & ~0x20;  // upper or lowercase accepted
     printf("\r\n");
 
     // Run a command based on the received character, or display the menu
