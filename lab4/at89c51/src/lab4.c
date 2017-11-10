@@ -428,8 +428,8 @@ void cmd_new_char(void)
         c = getchar();
         if( (c == '0') ||  (c == '1') ) {
           putchar(c);
-          bitval >>= 1;
-          bitval += (c - '0')<<4;
+          bitval <<= 1;
+          bitval += (c - '0');
           bits++;
         }
       } while (bits < 5);
