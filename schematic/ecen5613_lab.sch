@@ -20,7 +20,6 @@ LIBS:intel
 LIBS:audio
 LIBS:interface
 LIBS:digital-audio
-LIBS:philips
 LIBS:display
 LIBS:cypress
 LIBS:siliconi
@@ -89,7 +88,7 @@ F 3 "" H 7450 2250 50  0001 C CNN
 	1    7450 3450
 	-1   0    0    1   
 $EndComp
-Text GLabel 7200 3450 0    39   Input ~ 0
+Text GLabel 7200 3450 0    39   UnSpc ~ 0
 VCC
 $Comp
 L GND #PWR02
@@ -113,7 +112,7 @@ F 3 "" H 5000 6800 60  0001 C CNN
 	1    5600 6350
 	1    0    0    -1  
 $EndComp
-Text GLabel 4000 4500 2    39   Input ~ 0
+Text GLabel 4000 4500 2    39   Output ~ 0
 ALE
 Text GLabel 5350 2100 0    39   Input ~ 0
 ALE
@@ -128,7 +127,7 @@ F 3 "" H 5750 6800 50  0001 C CNN
 	1    5750 6800
 	1    0    0    -1  
 $EndComp
-Text GLabel 5750 4700 0    39   Input ~ 0
+Text GLabel 5750 4700 0    39   UnSpc ~ 0
 V_MCU
 $Sheet
 S 800  1350 700  550 
@@ -185,58 +184,58 @@ $EndComp
 $Comp
 L Q_PNP_EBC Q1
 U 1 1 59CE0FA5
-P 1400 3100
-F 0 "Q1" H 1591 3054 50  0000 L CNN
-F 1 "2N2907" H 1591 3145 50  0000 L CNN
-F 2 "" H 1600 3200 50  0001 C CNN
-F 3 "" H 1400 3100 50  0001 C CNN
-	1    1400 3100
+P 1250 3100
+F 0 "Q1" H 1441 3054 50  0000 L CNN
+F 1 "2N2907" H 1441 3145 50  0000 L CNN
+F 2 "" H 1450 3200 50  0001 C CNN
+F 3 "" H 1250 3100 50  0001 C CNN
+	1    1250 3100
 	-1   0    0    1   
 $EndComp
 $Comp
 L R R5
 U 1 1 59CE0FA6
-P 1300 3450
-F 0 "R5" H 1350 3450 50  0000 L CNN
-F 1 "330" V 1300 3450 39  0000 C CNN
-F 2 "" V 1230 3450 50  0001 C CNN
-F 3 "" H 1300 3450 50  0001 C CNN
-	1    1300 3450
+P 1150 3450
+F 0 "R5" H 1200 3450 50  0000 L CNN
+F 1 "330" V 1150 3450 39  0000 C CNN
+F 2 "" V 1080 3450 50  0001 C CNN
+F 3 "" H 1150 3450 50  0001 C CNN
+	1    1150 3450
 	-1   0    0    -1  
 $EndComp
 $Comp
 L R R4
 U 1 1 59CE0FA7
-P 1800 3100
-F 0 "R4" V 1700 3100 50  0000 C CNN
-F 1 "1000" V 1800 3100 39  0000 C CNN
-F 2 "" V 1730 3100 50  0001 C CNN
-F 3 "" H 1800 3100 50  0001 C CNN
-	1    1800 3100
+P 1650 3100
+F 0 "R4" V 1550 3100 50  0000 C CNN
+F 1 "1000" V 1650 3100 39  0000 C CNN
+F 2 "" V 1580 3100 50  0001 C CNN
+F 3 "" H 1650 3100 50  0001 C CNN
+	1    1650 3100
 	0    -1   1    0   
 $EndComp
 $Comp
 L LED_ALT D8
 U 1 1 59CE0FA8
-P 1300 3750
-F 0 "D8" V 1338 3632 50  0000 R CNN
-F 1 "GREEN_LED" V 1247 3632 50  0000 R CNN
-F 2 "" H 1300 3750 50  0001 C CNN
-F 3 "" H 1300 3750 50  0001 C CNN
-	1    1300 3750
+P 1150 3750
+F 0 "D8" V 1188 3632 50  0000 R CNN
+F 1 "GREEN_LED" V 1097 3632 50  0000 R CNN
+F 2 "" H 1150 3750 50  0001 C CNN
+F 3 "" H 1150 3750 50  0001 C CNN
+	1    1150 3750
 	0    1    -1   0   
 $EndComp
-Text GLabel 1300 2800 1    39   Input ~ 0
+Text GLabel 1150 2800 1    39   Input ~ 0
 VCC
 $Comp
 L GND #PWR06
 U 1 1 59CE0FA9
-P 1300 3950
-F 0 "#PWR06" H 1300 3700 50  0001 C CNN
-F 1 "GND" H 1305 3777 50  0000 C CNN
-F 2 "" H 1300 3950 50  0001 C CNN
-F 3 "" H 1300 3950 50  0001 C CNN
-	1    1300 3950
+P 1150 3950
+F 0 "#PWR06" H 1150 3700 50  0001 C CNN
+F 1 "GND" H 1155 3777 50  0000 C CNN
+F 2 "" H 1150 3950 50  0001 C CNN
+F 3 "" H 1150 3950 50  0001 C CNN
+	1    1150 3950
 	-1   0    0    -1  
 $EndComp
 Entry Wire Line
@@ -343,7 +342,7 @@ F 3 "" H 7800 4300 39  0001 C CNN
 	1    7550 4800
 	1    0    0    -1  
 $EndComp
-Text GLabel 3050 1100 2    39   Input ~ 0
+Text GLabel 3050 1100 2    39   UnSpc ~ 0
 V_MCU
 Entry Wire Line
 	6600 2250 6700 2350
@@ -467,7 +466,7 @@ F 3 "" H 5650 650 50  0001 C CNN
 	1    5650 1850
 	1    0    0    -1  
 $EndComp
-Text GLabel 5350 1850 0    39   Input ~ 0
+Text GLabel 5350 1850 0    39   UnSpc ~ 0
 VCC
 $Comp
 L GND #PWR?
@@ -591,9 +590,9 @@ Wire Wire Line
 Connection ~ 800  5050
 Connection ~ 1350 5050
 Wire Wire Line
-	1300 2900 1300 2800
+	1150 2900 1150 2800
 Wire Wire Line
-	1300 3900 1300 3950
+	1150 3900 1150 3950
 Wire Wire Line
 	3950 2100 4300 2100
 Wire Wire Line
@@ -876,7 +875,7 @@ Wire Wire Line
 Connection ~ 3000 1100
 Wire Bus Line
 	4500 2050 4400 1950
-Text GLabel 6400 6300 2    39   Input ~ 0
+Text GLabel 6400 6300 2    39   Output ~ 0
 DEBUG
 Wire Wire Line
 	6300 6300 6400 6300
@@ -898,7 +897,7 @@ F2 "TX" I R 2600 6150 39
 F3 "RX" I R 2600 6000 39 
 $EndSheet
 Wire Wire Line
-	1650 3100 1600 3100
+	1500 3100 1450 3100
 $Comp
 L AT89C51RC2 U1
 U 1 1 59DE17AD
@@ -967,7 +966,7 @@ F 3 "" H 4300 6800 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	1950 3100 2000 3100
+	1800 3100 2000 3100
 Wire Wire Line
 	2600 1900 2600 1800
 Wire Wire Line
@@ -986,7 +985,7 @@ Wire Wire Line
 Connection ~ 7700 6400
 Wire Wire Line
 	6950 6150 6300 6150
-Text GLabel 6400 6450 2    39   Input ~ 0
+Text GLabel 6400 6450 2    39   Output ~ 0
 LCD_EN
 Wire Wire Line
 	6400 6450 6300 6450
@@ -999,7 +998,7 @@ F2 "AD[0..7]" B L 9000 2200 39
 $EndSheet
 Wire Bus Line
 	8500 2200 9000 2200
-Text GLabel 1900 3700 0    47   BiDi ~ 0
+Text GLabel 1900 3700 0    47   Output ~ 0
 SCL
 Text GLabel 1900 3850 0    47   BiDi ~ 0
 SDA
@@ -1009,7 +1008,30 @@ Wire Wire Line
 	1900 3850 2000 3850
 NoConn ~ 2000 3550
 NoConn ~ 2000 3400
-NoConn ~ 2000 3250
 NoConn ~ 2000 2950
 NoConn ~ 2000 2800
+$Comp
+L CONN_02X01 JP1
+U 1 1 5A092DF4
+P 1750 3250
+F 0 "JP1" H 1750 3150 50  0000 C CNN
+F 1 "CONN_02X01" H 1750 3374 50  0001 C CNN
+F 2 "" H 1750 2050 50  0001 C CNN
+F 3 "" H 1750 2050 50  0001 C CNN
+	1    1750 3250
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR?
+U 1 1 5A093004
+P 1500 3350
+F 0 "#PWR?" H 1500 3100 50  0001 C CNN
+F 1 "GND" H 1505 3177 50  0000 C CNN
+F 2 "" H 1500 3350 50  0001 C CNN
+F 3 "" H 1500 3350 50  0001 C CNN
+	1    1500 3350
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1500 3250 1500 3350
 $EndSCHEMATC

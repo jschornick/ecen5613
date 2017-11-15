@@ -20,7 +20,6 @@ LIBS:intel
 LIBS:audio
 LIBS:interface
 LIBS:digital-audio
-LIBS:philips
 LIBS:display
 LIBS:cypress
 LIBS:siliconi

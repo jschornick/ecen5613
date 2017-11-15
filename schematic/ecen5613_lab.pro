@@ -1,4 +1,4 @@
-update=Fri 10 Nov 2017 09:23:57 AM MST
+update=Sun 12 Nov 2017 10:57:28 PM MST
 version=1
 last_client=kicad
 [pcbnew]
@@ -25,6 +25,16 @@ version=1
 NetIExt=net
 [general]
 version=1
+[schematic_editor]
+version=1
+PageLayoutDescrFile=page_layout.kicad_wks
+PlotDirectoryName=../../lab4/
+SubpartIdSeparator=0
+SubpartFirstId=65
+NetFmtName=
+SpiceAjustPassiveValues=0
+LabSize=39
+ERC_TestSimilarLabels=1
 [eeschema]
 version=1
 LibDir=
@@ -50,23 +60,12 @@ LibName18=intel
 LibName19=audio
 LibName20=interface
 LibName21=digital-audio
-LibName22=philips
-LibName23=display
-LibName24=cypress
-LibName25=siliconi
-LibName26=opto
-LibName27=atmel
-LibName28=contrib
-LibName29=valves
-LibName30=ecen5613_lab-cache
-LibName31=switches
-[schematic_editor]
-version=1
-PageLayoutDescrFile=page_layout.kicad_wks
-PlotDirectoryName=../../lab4/
-SubpartIdSeparator=0
-SubpartFirstId=65
-NetFmtName=
-SpiceAjustPassiveValues=0
-LabSize=39
-ERC_TestSimilarLabels=1
+LibName22=display
+LibName23=cypress
+LibName24=siliconi
+LibName25=opto
+LibName26=atmel
+LibName27=contrib
+LibName28=valves
+LibName29=ecen5613_lab-cache
+LibName30=switches
