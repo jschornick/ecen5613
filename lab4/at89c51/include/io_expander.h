@@ -20,4 +20,6 @@ uint8_t io_exp_read_pin(uint8_t pinnum);
 
 void io_exp_write_pin(uint8_t pinnum, uint8_t val);
 
-void io_exp_set_mode(uint8_t pins);
+void io_exp_set_inputs(uint8_t pins);
+
+extern uint8_t io_exp_input_pins;

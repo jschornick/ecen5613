@@ -12,6 +12,9 @@
 
 #include <stdio.h>
 
+uint8_t io_exp_input_pins = 0;
+
+// low read write from I/O expander
 uint8_t io_exp_read(void)
 {
   uint8_t pins;
@@ -27,6 +30,7 @@ uint8_t io_exp_read(void)
   return pins;
 }
 
+// low level write to I/O expander
 void io_exp_write(uint8_t pins)
 {
   uint8_t status;
@@ -41,12 +45,24 @@ void io_exp_write(uint8_t pins)
 
 uint8_t io_exp_read_pin(uint8_t pinnum)
 {
-  pinnum = pinnum;
-  return 0;
+  return (io_exp_read() & (1<<pinnum)) != 0;
 }
 
-void io_exp_set_mode(uint8_t pins)
+
+void io_exp_write_pin(uint8_t pinnum, uint8_t val)
 {
-  io_exp_write(pins);
+  uint8_t pins;
+  val = val<<pinnum;
+  pins = io_exp_read();
+  pins &= val;  // clear original value
+  io_exp_write(io_exp_input_pins | val | pins);
+}
+
+// Set read/write mode
+void io_exp_set_inputs(uint8_t pins)
+{
+  io_exp_input_pins = pins;
+  // Set any input pins high, but leave output pins at current value
+  io_exp_write(io_exp_input_pins | io_exp_read());
 }
 

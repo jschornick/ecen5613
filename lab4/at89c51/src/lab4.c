@@ -76,6 +76,9 @@ volatile uint8_t clock_ticks;   // clock ticks (0..19, 50ms each)
 volatile uint8_t clock_secs; // clock seconds, BCD format
 volatile uint8_t clock_mins; // clock minutes, BCD format
 
+#define IO_EXP_BUTTON  0  /* P0 */
+#define IO_EXP_LED     1  /* P1 */
+
 void init_clock(void)
 {
   // Set GPIO for clock control to be an input
@@ -651,8 +654,14 @@ void display_status(void)
   io_pins = io_exp_read();
   printf( "I/O port: ");
   for(i=0x80; i>0; i>>=1) {
-    putchar('0' + (io_pins & i));
+    putchar('0' + ((io_pins & i) != 0));
   }
+  printf( "\r\n");
+  printf( "Inputs  : ");
+  for(i=0x80; i>0; i>>=1) {
+    putchar('0' + ((io_exp_input_pins & i) != 0));
+  }
+
   printf( "\r\n");
 }
 
@@ -704,7 +713,10 @@ void main()
   init_clock();
   printf("done!\r\n");
 
-  io_exp_set_mode(0x01);  // P0 read, P1-7 output low
+  io_exp_set_inputs(1<<IO_EXP_BUTTON);
+  IT0=1; // set INT0 to be (falling) edge triggered
+  EX0=1; // enable INT0 interrupt for I/O expander
+  EA=1;  // ensure interrupts are enabled
 
   lcd_welcome();
   display_menu();
@@ -825,4 +837,14 @@ void timer2_isr(void) __interrupt (INTR_TIMER2)
       lcd_gotoaddr(lcd_addr);
     }
   }
+}
+
+
+void int0_isr(void) __interrupt (INTR_EXT0)
+{
+  // flag is automatically cleared by hardware
+
+  // button: high = not pressed, low = pressed
+  // LED   : high = off, low = on
+  io_exp_write_pin(IO_EXP_LED, io_exp_read_pin(IO_EXP_BUTTON));
 }
