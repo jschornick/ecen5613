@@ -8,7 +8,7 @@
 #ifndef __TIMER_H
 #define __TIMER_H
 
-#include <8052.h>
+#include "at89c51rc2.h"
 
 // or use tmod bits from 8051.h...
 #define TMOD_T0_8BIT      0x00  // 8-bit mode
@@ -46,5 +46,7 @@
 #define T2CON_RCLK  T2CON_5
 #define T2CON_EXF2  T2CON_6
 #define T2CON_TF2   T2CON_7
+
+void timer2_init(void);
 
 #endif /* __TIMER_H */

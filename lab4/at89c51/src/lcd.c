@@ -9,8 +9,7 @@
 #include <stdint.h>
 #include "lcd.h"
 #include "delay.h"
-
-#include <stdio.h>
+#include "at89c51rc2.h"
 
 // Memory mapped addresses
 //
@@ -122,14 +121,20 @@ void lcd_gotoxy(uint8_t row, uint8_t column)
 // Writes the specified character to the current LCD cursor position.
 void lcd_putchar(char cc)
 {
+  __critical {
   lcd_busywait();
   LCD_DATA_WR = cc;
+  }
 }
 
 uint8_t lcd_getchar()
 {
+  uint8_t data;
+  __critical {
   lcd_busywait();
-  return LCD_DATA_RD;
+  data = LCD_DATA_RD;
+  }
+  return data;
 }
 
 void lcd_getxy(uint8_t *row, uint8_t *col)
@@ -156,11 +161,15 @@ void lcd_getxy(uint8_t *row, uint8_t *col)
 // Gets the current address pointer
 uint8_t lcd_getaddr()
 {
+  uint8_t addr;
+  __critical {
   lcd_busywait();
   // wait t_add = 5.5us for address to be valid
   // (see HD44780U datasheet p192)
   delay_5_5us();
-  return (LCD_STAT & LCD_DDRAM_MASK);
+  addr = LCD_STAT & LCD_DDRAM_MASK;
+  }
+  return addr;
 }
 
 
@@ -169,8 +178,10 @@ uint8_t lcd_getaddr()
 // Sts the current address pointer to a CGRAM address
 void lcd_cgram_addr(uint8_t addr)
 {
+  __critical {
   lcd_busywait();
   LCD_CMD = LCD_CMD_CGRAM | (addr & LCD_CGRAM_MASK);
+  }
 }
 
 
@@ -202,8 +213,10 @@ void lcd_putstr(char *ss)
 // DDRAM address is set to 0x00 automatically.
 void lcd_clear(void)
 {
+  __critical {
   lcd_busywait();
   LCD_CMD = LCD_CMD_CLEAR;
+  }
 }
 
 

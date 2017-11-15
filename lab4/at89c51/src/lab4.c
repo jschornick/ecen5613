@@ -25,6 +25,7 @@
 #include "lcd.h"
 #include "eeprom.h"
 #include "io_expander.h"
+#include "timer.h"
 
 // Only load the simplest printf since we're doing hex padding manually.
 #define printf printf_tiny
@@ -45,7 +46,7 @@
 #define KEY_SAVE     'V'  // Save LCD data to EEPROM
 #define KEY_LOAD     'L'  // Load LCD data from EEPROM
 #define KEY_CLOCK    'C'  // Stop/start clock
-#define KEY_CLOCK_ZERO '0'  // Reset clock to 00:00.0
+#define KEY_CLOCK_ZERO 'Z'  // Reset clock to 00:00.0
 
 // Useful ASCII values
 #define ASCII_ESC 0x1b  /* escape */
@@ -71,14 +72,19 @@
 #define CLOCK_CTL_OFF 1
 
 uint8_t clock_run;   // software clock control
-volatile uint8_t clock_ticks; // clock ticks (0.1s) since reset
+volatile uint8_t clock_ticks;   // clock ticks (0..19, 50ms each)
+volatile uint8_t clock_secs; // clock seconds, BCD format
+volatile uint8_t clock_mins; // clock minutes, BCD format
 
 void init_clock(void)
 {
   // Set GPIO for clock control to be an input
   CLOCK_CTL = 1;
-  clock_run = 0; // stop clock via software
   clock_ticks = 0;
+  clock_secs = 0;
+  clock_mins = 0;
+  timer2_init();
+  clock_run = 1; // run clock
 }
 
 // Function: dump_screen
@@ -163,19 +169,21 @@ void dump_cgram(void)
   printf("\r\nLCD CGRAM:\r\n");
   printf("----------");
 
-  lcd_cgram_addr(0x0);
-  for(i=0; i<64; i++) {
-    if ((i & 0xf) == 0) {
-      putchar('\r');
-      putchar('\n');
-      putchar(NIBBLE_TO_ASCII(i>>4));
-      putchar(NIBBLE_TO_ASCII(i&0xf));
-      putchar(':');
+  __critical {
+    lcd_cgram_addr(0x0);
+    for(i=0; i<64; i++) {
+      if ((i & 0xf) == 0) {
+        putchar('\r');
+        putchar('\n');
+        putchar(NIBBLE_TO_ASCII(i>>4));
+        putchar(NIBBLE_TO_ASCII(i&0xf));
+        putchar(':');
+      }
+      c = lcd_getchar();
+      putchar(' ');
+      putchar(NIBBLE_TO_ASCII(c>>4));
+      putchar(NIBBLE_TO_ASCII(c&0xf));
     }
-    c = lcd_getchar();
-    putchar(' ');
-    putchar(NIBBLE_TO_ASCII(c>>4));
-    putchar(NIBBLE_TO_ASCII(c&0xf));
   }
   putchar('\r');
   putchar('\n');
@@ -292,7 +300,7 @@ void lcd_welcome(void)
   }
 
   lcd_gotoxy(0,0);
-  lcd_putstr("Happy Friday!");
+  lcd_putstr("Stay cool...");
   lcd_gotoxy(1,5);
   lcd_putchar(0);
   lcd_putchar(1);
@@ -304,7 +312,6 @@ void lcd_welcome(void)
   lcd_putchar(6);
   lcd_putchar(7);
   lcd_gotoxy(3,3);
-  lcd_putstr("...stay cool!");
 }
 
 
@@ -393,13 +400,15 @@ void display_custom_chars()
     for(charnum = 0; charnum<8; charnum++) {
       putchar(' ');
       putchar(' ');
-      lcd_cgram_addr( (charnum<<3) + row);
-      byte = lcd_getchar();
-      for(bitmask=16; bitmask > 0; bitmask >>= 1) {
-        if(byte & bitmask) {
-          putchar('x');
-        } else {
-          putchar(' ');
+      __critical {
+        lcd_cgram_addr( (charnum<<3) + row);
+        byte = lcd_getchar();
+        for(bitmask=16; bitmask > 0; bitmask >>= 1) {
+          if(byte & bitmask) {
+            putchar('x');
+          } else {
+            putchar(' ');
+          }
         }
       }
     }
@@ -568,9 +577,11 @@ void cmd_save(void)
   for(i=0; i < LCD_COLS*2; i++) {
     eeprom_write(ee_addr++, lcd_getchar());
   }
-  lcd_cgram_addr(0x0);
-  for(i=0; i<= 64; i++) {
-    eeprom_write(ee_addr++, lcd_getchar());
+  __critical {
+    lcd_cgram_addr(0x0);
+    for(i=0; i<= 64; i++) {
+      eeprom_write(ee_addr++, lcd_getchar());
+    }
   }
   printf("done!\r\n");
 }
@@ -589,6 +600,7 @@ void cmd_load(void)
   printf("\r\nEEPROM address: 0xABC = 0x");
   ee_addr = read_hex_n(3);
   printf("\r\nLoading... ");
+
   lcd_gotoaddr(0x0);
   for(i=0; i < LCD_COLS*2; i++) {
     eeprom_read(ee_addr++, &data);
@@ -599,10 +611,14 @@ void cmd_load(void)
     eeprom_read(ee_addr++, &data);
     lcd_putchar(data);
   }
-  lcd_cgram_addr(0x0);
-  for(i=0; i< 64; i++) {
-    eeprom_read(ee_addr++, &data);
-    lcd_putchar(data);
+  // The entire CGRAM write has to be in a critical section since the clock update
+  // can't restore a CGRAM address due to address space ambiguity of the LCD.
+  __critical {
+    lcd_cgram_addr(0x0);
+    for(i=0; i< 64; i++) {
+      eeprom_read(ee_addr++, &data);
+      lcd_putchar(data);
+    }
   }
   printf("done!\r\n");
 }
@@ -612,17 +628,25 @@ void display_status(void)
 {
   uint8_t io_pins;
   uint8_t i;
+  uint8_t ticks, mins, secs;
 
   printf( "\r\nClock status: ");
   if(CLOCK_CTL == CLOCK_CTL_OFF) {
     printf( "Disabled by JP1\r\n" );
   } else {
     if(clock_run) {
-      printf( "Disabled by software\r\n" );
-    } else {
       printf( "Running\r\n" );
+    } else {
+      printf( "Disabled by software\r\n" );
     }
   }
+
+  __critical {
+    ticks = clock_ticks;
+    secs = clock_secs;
+    mins = clock_mins;
+  }
+  printf( "Time: %u%u:%u%u.%u\r\n", mins>>4, mins&0xf, secs>>4, secs&0xf, ticks>>1);
 
   io_pins = io_exp_read();
   printf( "I/O port: ");
@@ -729,10 +753,21 @@ void main()
       cmd_load();
       break;
     case KEY_CLOCK:
-      clock_run ^= 1;
+      if(clock_run) {
+        clock_run = 0;
+        printf("\r\nClock disbled\r\n");
+      } else {
+        clock_run = 1;
+        printf("\r\nClock enabled\r\n");
+      }
       break;
     case KEY_CLOCK_ZERO:
-      clock_ticks = 0;
+      __critical {
+        clock_ticks = 0;
+        clock_secs = 0;
+        clock_mins = 0;
+      }
+      printf("\r\nClock reset\r\n");
       break;
     default:
       display_status();
@@ -741,4 +776,53 @@ void main()
     }
   }
 
+}
+
+
+void timer2_isr(void) __interrupt (INTR_TIMER2)
+{
+  uint8_t lcd_addr;
+
+  TF2 = 0; // clear flag
+
+  if (clock_run && (CLOCK_CTL == CLOCK_CTL_ON)) {
+    clock_ticks++;
+
+    // Each tick is 50ms, 20 ticks = 1s
+    if (clock_ticks >= 20) {
+      clock_ticks = 0;
+      clock_secs++;
+    }
+
+    // Minutes and seconds are two 8-bit binary-coded decimals
+    if ((clock_secs&0x0f) == 0x0A) {
+      clock_secs &= 0xf0; // clear 1s digit
+      clock_secs += 0x10; // increase 10s digit
+    }
+    if ((clock_secs&0xf0) == 0x60) {
+      clock_secs = 0; // reset
+      clock_mins++;
+    }
+    if ((clock_mins&0x0f) == 0x0A) {
+      clock_mins &= 0xf0; // clear 1s digit
+      clock_mins += 0x10; // increase 10s digit
+    }
+    if ((clock_mins&0xf0) == 0xA0) {
+      clock_mins = 0; // reset
+    }
+
+    if( (clock_ticks & 0x01) == 0 ) {
+      lcd_addr = lcd_getaddr();
+      lcd_gotoxy(3,3);
+      lcd_putstr("Time: ");
+      lcd_putchar('0' + (clock_mins>>4));
+      lcd_putchar('0' + (clock_mins&0xf));
+      lcd_putchar(':');
+      lcd_putchar('0' + (clock_secs>>4));
+      lcd_putchar('0' + (clock_secs&0xf));
+      lcd_putchar('.');
+      lcd_putchar('0' + (clock_ticks>>1));
+      lcd_gotoaddr(lcd_addr);
+    }
+  }
 }
