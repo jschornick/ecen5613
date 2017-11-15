@@ -9,6 +9,7 @@
 #ifndef __I2C_H
 #define __I2C_H
 
+#include <stdint.h>
 #include "at89c51rc2.h"
 
 // Use two GPIO lines for I2C clock and data
@@ -46,5 +47,9 @@ uint8_t i2c_send(uint8_t data);
 //
 // Read 8-bits over I2C, MSB first
 void i2c_read(uint8_t *data);
+
+
+// send an ACK from the master
+#define i2c_ack() I2C_SCL = 0; I2C_SDA = 0; I2C_SDA = 1; I2C_SCL = 1
 
 #endif /* __I2C_H */

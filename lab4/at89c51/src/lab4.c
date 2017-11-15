@@ -24,6 +24,7 @@
 #include "at89c51rc2.h"
 #include "lcd.h"
 #include "eeprom.h"
+#include "io_expander.h"
 
 // Only load the simplest printf since we're doing hex padding manually.
 #define printf printf_tiny
@@ -36,13 +37,15 @@
 #define KEY_CGRAM    'G'  // Dump LCD CGRAM
 #define KEY_SCREEN   'S'  // Dump LCD Screen contents
 #define KEY_TYPE     'T'  // Type on LCD
-#define KEY_CLEAR    'C'  // Clear the LCD
+#define KEY_CLEAR    'X'  // Clear the LCD
 #define KEY_CUSTOM   'N'  // New custom character
 #define KEY_EE_WRITE 'W'  // Write byte to EEPROM
 #define KEY_EE_READ  'R'  // Read byte from EEPROM
 #define KEY_EE_DUMP  'E'  // Dump EEPROM
 #define KEY_SAVE     'V'  // Save LCD data to EEPROM
 #define KEY_LOAD     'L'  // Load LCD data from EEPROM
+#define KEY_CLOCK    'C'  // Stop/start clock
+#define KEY_CLOCK_ZERO '0'  // Reset clock to 00:00.0
 
 // Useful ASCII values
 #define ASCII_ESC 0x1b  /* escape */
@@ -60,6 +63,23 @@
 #define TYPE_MODE_ESC  1  /* escape sequence */
 #define TYPE_MODE_CS   2  /* control sequence */
 
+// Clock pin (input from JP1)
+//   0 : Clock runs   (JP1 connected)
+//   1 : Clock paused (JP1 disconnected)
+#define CLOCK_CTL P1_3
+#define CLOCK_CTL_ON  0
+#define CLOCK_CTL_OFF 1
+
+uint8_t clock_run;   // software clock control
+volatile uint8_t clock_ticks; // clock ticks (0.1s) since reset
+
+void init_clock(void)
+{
+  // Set GPIO for clock control to be an input
+  CLOCK_CTL = 1;
+  clock_run = 0; // stop clock via software
+  clock_ticks = 0;
+}
 
 // Function: dump_screen
 //
@@ -588,6 +608,30 @@ void cmd_load(void)
 }
 
 
+void display_status(void)
+{
+  uint8_t io_pins;
+  uint8_t i;
+
+  printf( "\r\nClock status: ");
+  if(CLOCK_CTL == CLOCK_CTL_OFF) {
+    printf( "Disabled by JP1\r\n" );
+  } else {
+    if(clock_run) {
+      printf( "Disabled by software\r\n" );
+    } else {
+      printf( "Running\r\n" );
+    }
+  }
+
+  io_pins = io_exp_read();
+  printf( "I/O port: ");
+  for(i=0x80; i>0; i>>=1) {
+    putchar('0' + (io_pins & i));
+  }
+  printf( "\r\n");
+}
+
 // Function: display_menu
 //
 // Presents the user a simple menu of commands to choose from.
@@ -605,6 +649,8 @@ void display_menu(void)
   printf(" %c - EEPROM: Dump memory\r\n", KEY_EE_DUMP);
   printf(" %c - COMBO: Save LCD -> EEPROM\r\n", KEY_SAVE);
   printf(" %c - COMBO: Load LCD <- EEPROM\r\n", KEY_LOAD);
+  printf(" %c - CLOCK: Start/stop\r\n", KEY_CLOCK);
+  printf(" %c - CLOCK: Reset to 0:00.0\r\n", KEY_CLOCK_ZERO);
 }
 
 
@@ -629,6 +675,12 @@ void main()
   printf("Initializing LCD... ");
   lcd_init();
   printf("done!\r\n");
+
+  printf("Initializing clock... ");
+  init_clock();
+  printf("done!\r\n");
+
+  io_exp_set_mode(0x01);  // P0 read, P1-7 output low
 
   lcd_welcome();
   display_menu();
@@ -676,7 +728,14 @@ void main()
     case KEY_LOAD:
       cmd_load();
       break;
+    case KEY_CLOCK:
+      clock_run ^= 1;
+      break;
+    case KEY_CLOCK_ZERO:
+      clock_ticks = 0;
+      break;
     default:
+      display_status();
       display_menu();
       break;
     }

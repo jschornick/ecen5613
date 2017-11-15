@@ -29,6 +29,7 @@ void i2c_start(void)
   I2C_SCL = 0;  // ready for data to change
 }
 
+
 // Function: i2c_stop
 //
 // Generate I2C stop condition
@@ -63,12 +64,17 @@ uint8_t i2c_send(uint8_t data)
   }
   I2C_SCL = 0;
   I2C_SDA = 1;    // release data line for ACK
+
+  nop(); // make sure SCL stays low long enough
+  nop(); //   ...slowest device is io_expander @4.7us
+  nop();
   I2C_SCL = 1;    // clock for ACK
   nop();
   data = I2C_SDA; // read ACK signal
   I2C_SCL = 0;
   return data;    // return ACK signal
 }
+
 
 // Function: i2c_read
 //
