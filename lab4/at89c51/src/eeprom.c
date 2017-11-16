@@ -48,16 +48,17 @@ void eeprom_write(uint16_t addr, uint8_t data)
 //   data: address to store the 8-bit value read
 void eeprom_read(uint16_t addr, uint8_t *data)
 {
+  uint8_t status;
   // Wait for not busy
   while (eeprom_busy());
   // send register address to EEPROM
   i2c_start();
-  i2c_send(EEPROM_WRITE(addr>>8));
-  i2c_send(addr&0xff);
+  status = i2c_send(EEPROM_WRITE(addr>>8));
+  status = i2c_send(addr&0xff);
 
   // Ask EEPROM for a byte
   i2c_start();
-  i2c_send(EEPROM_READ(addr>>8));
+  status = i2c_send(EEPROM_READ(addr>>8));
   i2c_read(data);
   i2c_stop();
 }
