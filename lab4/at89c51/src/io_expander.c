@@ -10,8 +10,6 @@
 #include "i2c.h"
 #include "io_expander.h"
 
-#include <stdio.h>
-
 uint8_t io_exp_input_pins = 0;
 
 // low read write from I/O expander
@@ -37,9 +35,7 @@ void io_exp_write(uint8_t pins)
   i2c_start();
 
   status = i2c_send(IO_EXP_WRITE);
-  printf("I2C_send(addr) = %u\r\n", status);
   status = i2c_send(pins);
-  printf("I2C_send(pins) = %u\r\n", status);
   i2c_stop();
 }
 

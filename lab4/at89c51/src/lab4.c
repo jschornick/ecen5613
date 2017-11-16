@@ -314,7 +314,7 @@ void lcd_welcome(void)
   lcd_putchar(5);
   lcd_putchar(6);
   lcd_putchar(7);
-  lcd_gotoxy(3,3);
+  lcd_gotoxy(3,0);
 }
 
 
@@ -484,6 +484,11 @@ void cmd_ee_write(void)
   uint8_t val;
   printf("\r\nEEPROM address to write (0xABC) ? 0x");
   addr = read_hex_n(3);
+  if(addr > EEPROM_ADDR_MAX) {
+    printf("\r\nAddress out of range!\r\n");
+    return;
+  }
+
   printf("\r\nEEPROM value (0xDE) ? 0x");
   val = read_hex_n(2);
   printf("\r\nWriting %x to address %x... ", val, addr);
@@ -503,6 +508,11 @@ void cmd_ee_read(void)
 
   printf("\r\nEEPROM address to read (0xABC) ? 0x");
   addr = read_hex_n(3);
+  if(addr > EEPROM_ADDR_MAX) {
+    printf("\r\nAddress out of range!\r\n");
+    return;
+  }
+
   data = 0;
   eeprom_read(addr,&data);
   printf("\r\n");
@@ -532,6 +542,14 @@ void cmd_ee_dump(void)
   start_addr = read_hex_n(3);
   printf("\r\nEEPROM end address  : 0xDEF = 0x");
   end_addr = read_hex_n(3);
+  if(end_addr > EEPROM_ADDR_MAX) {
+    printf("\r\nEnd address out of range!\r\n");
+    return;
+  }
+  if(start_addr > end_addr) {
+    printf("\r\nStart address must be less than end address!\r\n");
+    return;
+  }
 
   printf("\r\n      0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F");
   printf("\r\n     -----------------------------------------------");
@@ -713,10 +731,16 @@ void main()
   init_clock();
   printf("done!\r\n");
 
+  printf("Performimg EEPROM reset... ");
+  eeprom_reset();
+  printf("done!\r\n");
+
+  printf("Configuring I/O expander... ");
   io_exp_set_inputs(1<<IO_EXP_BUTTON);
   IT0=1; // set INT0 to be (falling) edge triggered
   EX0=1; // enable INT0 interrupt for I/O expander
   EA=1;  // ensure interrupts are enabled
+  printf("done!\r\n");
 
   lcd_welcome();
   display_menu();

@@ -7,6 +7,9 @@
 // Version    : See GitHub repository jschornick/ecen5613 for revision details
 
 
+#define EEPROM_DEVICE_ID  0xA0  /* standard EEPROM device id */
+#define EEPROM_ADDR_MAX  0x7ff  /* 2048 byte EEPROM */
+
 // Function eeprom_write
 //
 // Writes an 8-bit value to the specified EEPROM address
@@ -32,3 +35,10 @@ void eeprom_read(uint16_t addr, uint8_t *data);
 // Return true if the EEPROM is busy with an operation, based on whether or not an ACK is received.
 // An ACK is a low puslse, so reading 0 is not busy.
 uint8_t eeprom_busy(void);
+
+
+// Function: eeprom_reset
+//
+// Performs a software reset of the I2C EEPROM using an algorithm that conforms
+// to Microchip application note AN709.
+void eeprom_reset(void);

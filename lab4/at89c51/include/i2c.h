@@ -40,7 +40,7 @@ void i2c_stop(void);
 // Send 8-bits over I2C, MSB first
 //
 // Returns the ACK/NACK value received as bit 9
-uint8_t i2c_send(uint8_t data);
+uint8_t i2c_send(__data uint8_t data);
 
 
 // Function: i2c_read

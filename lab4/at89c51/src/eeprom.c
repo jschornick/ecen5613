@@ -10,8 +10,6 @@
 #include "i2c.h"
 #include "eeprom.h"
 
-#define EEPROM_DEVICE_ID  0xA0  /* standard EEPROM device id */
-
 // The top 3 bits of the 11-bit EEPROM address are actually the page number,
 // sent as the top 3-bits of the 8-bit device address.
 // I2C standard reads have the LSB = 1, writes have LSB = 0.
@@ -28,14 +26,14 @@
 //   data: 8-bit value to write to address
 void eeprom_write(uint16_t addr, uint8_t data)
 {
+  uint8_t status;
   // Wait for not busy
   while (eeprom_busy());
   i2c_start();
 
-  i2c_send(EEPROM_WRITE(addr>>8));
-  // TODO: check ACK/NACK status after each send
-  i2c_send(addr&0xff);
-  i2c_send(data);
+  status = i2c_send(EEPROM_WRITE(addr>>8));
+  status = i2c_send(addr&0xff);
+  status = i2c_send(data);
 
   i2c_stop();
 }
@@ -73,4 +71,16 @@ uint8_t eeprom_busy(void)
 {
   i2c_start();
   return i2c_send(EEPROM_WRITE(0));
+}
+
+// Function: eeprom_reset
+//
+// Performs a software reset of the I2C EEPROM using an algorithm that conforms
+// to Microchip application note AN709.
+void eeprom_reset(void)
+{
+  i2c_start();
+  i2c_send(0xff);  // Send 9 bits of '1', 8 bits data (0xff) + 1 bit high waiting for ACK
+  i2c_start();
+  i2c_stop();
 }

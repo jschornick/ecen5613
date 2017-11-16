@@ -52,7 +52,7 @@ void i2c_stop(void)
 // Send 8-bits over I2C, MSB first
 //
 // Returns the ACK/NACK value received as bit 9
-uint8_t i2c_send(uint8_t data)
+uint8_t i2c_send(__data uint8_t data)
 {
   uint8_t i;
   for(i = 0; i<8; i++) {
@@ -60,7 +60,7 @@ uint8_t i2c_send(uint8_t data)
     I2C_SDA = (data & 0x80);  // get top bit
     data <<= 1; // shift bits left by one
     I2C_SCL = 1; // data stable
-    nop();
+    //nop();
   }
   I2C_SCL = 0;
   I2C_SDA = 1;    // release data line for ACK
