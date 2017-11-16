@@ -1,0 +1,121 @@
+// File       : uart.c
+// Author     : Jeff Schornick
+//
+// MSP432 UART driver using interrupts and a pair of RX/TX buffers.
+// The EUSCIA0 device is the UART channeled over USB to the host PC.
+//
+// Compilation: GCC cross compiler for ARM, v4.9.3+
+// Version    : See GitHub repository jschornick/ecen5613 for revision details
+
+#include <stdint.h>
+#include <stddef.h>
+#include "msp432p401r.h"
+#include "fifo.h"
+#include "uart.h"
+
+fifo_t rx_fifo;
+fifo_t tx_fifo;
+
+// Function: uart_init
+//
+// Initializes the EUSCI A0 as a basic UART in 8n1 mode at 57.6K baud.
+// Current configuration expectes a processor clock of 3MHz.
+//
+// Also initializes UART FIFOs for queued transmissions.
+//
+// See MSP432P4xx TRM section 22.3.1 for details on the initialization routine.
+void uart_init(void)
+{
+  // Configure Port 1 pins to select UART module
+  // RX : P1.2
+  // TX : P1.3
+  P1->SEL0 |= BIT2 | BIT3;
+  P1->SEL1 &= ~(BIT2 | BIT3);
+
+  // Reset device before configuration
+  EUSCI_A0->CTLW0 |= EUSCI_A_CTLW0_SWRST;
+
+  // UART Clock = SMCLK (low-speed subsystem master clock) = 3MHz
+  EUSCI_A0->CTLW0 = EUSCI_A_CTLW0_SSEL__SMCLK | EUSCI_A_CTLW0_SWRST;
+
+  // Baud rate calculation
+  //   See MSP432P4xx TRM section 22.3.10
+  //   baud_clock/baud_rate = 3MHz/57600 = 52.0833  > 16 (so use oversampling)
+  //   52.083 / 16  = 3.255 -> BRW = 3
+  //   3.255-3 * 16 = 4     -> BRF = 4
+  // Calculator: http://processors.wiki.ti.com/index.php/USCI_UART_Baud_Rate_Gen_Mode_Selection
+  EUSCI_A0->BRW = 3;
+
+  // MCTLW
+  //   BRF = 4  (bits 7-4)
+  //   BRS = 0  (bits 15-8)
+  //   OS16 = 1 (bit0)
+  EUSCI_A0->MCTLW = EUSCI_A_MCTLW_OS16 | (4<<EUSCI_A_MCTLW_BRF_OFS);
+
+  // clear reset to enable UART
+  EUSCI_A0->CTLW0 &= ~EUSCI_A_CTLW0_SWRST;
+
+  // reset flags (RX=0, TX=1) and enable interrupts
+  EUSCI_A0->IFG &= ~EUSCI_A_IFG_RXIFG;
+  EUSCI_A0->IFG |=  EUSCI_A_IFG_TXIFG;
+
+  EUSCI_A0->IE |= EUSCI_A_IE_RXIE | EUSCI_A_IE_TXIE;
+
+  __NVIC_EnableIRQ(EUSCIA0_IRQn);
+
+  fifo_init(&rx_fifo, UART_FIFO_SIZE);
+  fifo_init(&tx_fifo, UART_FIFO_SIZE);
+
+}
+
+// Function: uart_putc
+//
+// Send a character out the UART.
+void uart_putc(char c) {
+  //while(!(EUSCI_A0->IFG & EUSCI_A_IFG_TXIFG));
+  EUSCI_A0->TXBUF = c;
+}
+
+// Function: uart_send
+//
+// Queues a character for UART transmission
+void uart_send(char c) {
+  fifo_push(&tx_fifo, c);
+  __NVIC_SetPendingIRQ(EUSCIA0_IRQn);
+}
+
+// Function: uart_send
+//
+// Queues a null-terminated string for UART transmission
+void uart_send_str(char *str) {
+  while(*str != 0) {
+    fifo_push(&tx_fifo, *str);
+    str++;
+  }
+  // TODO: find a better way to prime the trasmission
+  __NVIC_SetPendingIRQ(EUSCIA0_IRQn);
+}
+
+void EUSCIA0_IRQHandler(void)
+{
+  // FXIFG automatically cleared on read from RXBUF
+  // TXIFG automatically cleared on write to TXBUF
+  uint8_t flags = EUSCI_A0->IFG;
+  char val;
+
+  // Received a byte
+  if (flags & EUSCI_A_IFG_RXIFG) {
+    fifo_push(&rx_fifo, EUSCI_A0->RXBUF);
+  }
+
+  // Clear to send
+  if (flags & EUSCI_A_IFG_TXIFG) {
+    if(tx_fifo.count) {
+      fifo_pop(&tx_fifo, &val);
+      EUSCI_A0->TXBUF = val;
+    } else {
+      // clear flag manually since not sending
+      EUSCI_A0->IFG &= ~(EUSCI_A_IFG_TXIFG);
+    }
+  }
+}
