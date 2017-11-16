@@ -11,7 +11,6 @@
 #include "msp432p401r.h"
 #include "fifo.h"
 
-
 // Function: fifo_init
 //
 // Initializes a static-sized FIFO queue. Buffer storage is dynamically
@@ -28,10 +27,10 @@ void fifo_init(fifo_t *fifo, size_t size)
 // Function: fifo_push
 //
 // Pushes a new item onto the FIFO, unless it is full.
-void fifo_push(fifo_t *fifo, char val)
+uint8_t fifo_push(fifo_t *fifo, char val)
 {
   if( fifo->count == fifo->size ) {
-    return;
+    return FIFO_ERR;
   }
   __disable_irq();
   if( ++(fifo->head) == (fifo->buffer + fifo->size) )
@@ -41,16 +40,17 @@ void fifo_push(fifo_t *fifo, char val)
   *(fifo->head) = val;
   fifo->count++;
   __enable_irq();
+  return FIFO_OK;
 }
 
 // Function: fifo_pop
 //
 // Pops the head of the FIFO queue and returns it in val.
 // Val will be unchanged if called with an empty queue.
-void fifo_pop(fifo_t *fifo, char *val)
+uint8_t fifo_pop(fifo_t *fifo, char *val)
 {
   if( fifo->count == 0 ) {
-    return;
+    return FIFO_ERR;
   }
   __disable_irq();
   if( ++(fifo->tail) == (fifo->buffer + fifo->size) )
@@ -60,4 +60,10 @@ void fifo_pop(fifo_t *fifo, char *val)
   *val = *(fifo->tail);
   fifo->count--;
   __enable_irq();
+  return FIFO_OK;
+}
+
+uint8_t fifo_empty(fifo_t *fifo)
+{
+  return (fifo->count == 0);
 }

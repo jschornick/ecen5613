@@ -12,6 +12,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#define FIFO_ERR 0
+#define FIFO_OK 1
+
 typedef struct
 {
   volatile char *buffer;  /* The address of the data buffer allocation */
@@ -23,8 +26,8 @@ typedef struct
 
 void fifo_init(fifo_t *fifo, size_t size);
 
-void fifo_push(fifo_t *fifo, char val);
+uint8_t fifo_push(fifo_t *fifo, char val);
 
-void fifo_pop(fifo_t *fifo, char *val);
+uint8_t fifo_pop(fifo_t *fifo, char *val);
 
 #endif /* __FIFO_H */

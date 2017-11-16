@@ -12,7 +12,7 @@
 #ifndef __UART_H
 #define __UART_H
 
-#define UART_FIFO_SIZE 100
+#define UART_FIFO_SIZE 1000
 
 extern fifo_t rx_fifo;
 extern fifo_t tx_fifo;
@@ -35,12 +35,12 @@ void uart_putc(char c);
 // Function: uart_send
 //
 // Queues a character for UART transmission
-void uart_send(char c);
+void uart_queue(char c);
 
 // Function: uart_send
 //
 // Queues a null-terminated string for UART transmission
-void uart_send_str(char *str);
+void uart_queue_str(char *str);
 
 void EUSCIA0_IRQHandler(void);
 

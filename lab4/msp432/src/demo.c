@@ -125,39 +125,33 @@ int main(void) {
 
   __enable_irq();
 
-  uart_putc('\r');
-  uart_putc('\n');
-  uart_send_str("Exciting message from the UART FIFO!\r\n");
-  uart_send_str("Ready to echo characters...\r\n");
+  uart_queue_str("\r\nA long welcome message to test the FIFO!\r\n");
+  uart_queue('-');
+  uart_queue('>');
   while(1) {
     if(S1_FLAG) {
-      speed -= 1;
-      uart_putc('-');
-      S1_FLAG = 0;
+      uart_queue('1');
+      S1_FLAG=0;
     }
     if(S2_FLAG) {
-      speed += 1;
-      uart_putc('+');
-      S2_FLAG = 0;
+      uart_queue('2');
+      S2_FLAG=0;
     }
-
-    // Cycle the colors one step based on speed setting
-    red += speed;
-    green += speed;
-    blue += speed;
 
     // Set new color
     //   RGB intensities above 2^15 are aliased to (2^16 - value) to make
     //   a smooth transition when the 16-bit value rolls over
-    TIMER_A0->CCR[1] = (red < 1<<15) ? (red >> 11) : (0xffff-red) >> 11;
-    TIMER_A0->CCR[2] = (green < 1<<15) ? (green >> 11) : (0xffff-green) >> 11;
-    TIMER_A0->CCR[3] = (blue < 1<<15) ? (blue >> 11) : (0xffff-blue) >> 11;
+    /* TIMER_A0->CCR[1] = (red < 1<<15) ? (red >> 11) : (0xffff-red) >> 11; */
+    /* TIMER_A0->CCR[2] = (green < 1<<15) ? (green >> 11) : (0xffff-green) >> 11; */
+    /* TIMER_A0->CCR[3] = (blue < 1<<15) ? (blue >> 11) : (0xffff-blue) >> 11; */
 
     // Pop received characters off the FIFO and echo back
-    if(rx_fifo.count) {
+    while(rx_fifo.count) {
       fifo_pop(&rx_fifo, &c);
-      uart_putc(c & ~0x20);
+      uart_queue(c);
     }
+
+
 
   };
 }

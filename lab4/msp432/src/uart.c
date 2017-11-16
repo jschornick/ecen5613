@@ -13,6 +13,10 @@
 #include "fifo.h"
 #include "uart.h"
 
+#define UART_TX_READY (EUSCI_A0->IFG & EUSCI_A_IFG_TXIFG)
+#define UART_IRQ_DISABLE (EUSCI_A0->IE &= ~(EUSCI_A_IE_TXIE|EUSCI_A_IE_RXIE))
+#define UART_IRQ_ENABLE (EUSCI_A0->IE |= EUSCI_A_IE_TXIE|EUSCI_A_IE_RXIE)
+
 fifo_t rx_fifo;
 fifo_t tx_fifo;
 
@@ -59,7 +63,8 @@ void uart_init(void)
   EUSCI_A0->IFG &= ~EUSCI_A_IFG_RXIFG;
   EUSCI_A0->IFG |=  EUSCI_A_IFG_TXIFG;
 
-  EUSCI_A0->IE |= EUSCI_A_IE_RXIE | EUSCI_A_IE_TXIE;
+  //EUSCI_A0->IE |= EUSCI_A_IE_RXIE | EUSCI_A_IE_TXIE;
+  EUSCI_A0->IE |= EUSCI_A_IE_RXIE;
 
   __NVIC_EnableIRQ(EUSCIA0_IRQn);
 
@@ -70,30 +75,42 @@ void uart_init(void)
 
 // Function: uart_putc
 //
-// Send a character out the UART.
+// Send a character directly out the UART.
 void uart_putc(char c) {
-  //while(!(EUSCI_A0->IFG & EUSCI_A_IFG_TXIFG));
+  while(!(EUSCI_A0->IFG & EUSCI_A_IFG_TXIFG));
   EUSCI_A0->TXBUF = c;
 }
 
-// Function: uart_send
-//
-// Queues a character for UART transmission
-void uart_send(char c) {
-  fifo_push(&tx_fifo, c);
-  __NVIC_SetPendingIRQ(EUSCIA0_IRQn);
+// prime the transmitter if ready and the fifo isn't empty
+void uart_prime_tx(void) {
+  char c;
+  UART_IRQ_DISABLE;
+  if (tx_fifo.count) {
+    if (UART_TX_READY) {
+      fifo_pop(&tx_fifo, &c);
+      EUSCI_A0->TXBUF = c;
+    }
+  }
+  UART_IRQ_ENABLE;;
 }
 
-// Function: uart_send
+// Function: uart_queue
+//
+// Queues a character for UART transmission
+void uart_queue(char c) {
+  fifo_push(&tx_fifo, c);
+  uart_prime_tx();
+}
+
+// Function: uart_queue_str
 //
 // Queues a null-terminated string for UART transmission
-void uart_send_str(char *str) {
+void uart_queue_str(char *str) {
   while(*str != 0) {
     fifo_push(&tx_fifo, *str);
     str++;
   }
-  // TODO: find a better way to prime the trasmission
-  __NVIC_SetPendingIRQ(EUSCIA0_IRQn);
+  uart_prime_tx();
 }
 
 void EUSCIA0_IRQHandler(void)
@@ -111,11 +128,12 @@ void EUSCIA0_IRQHandler(void)
   // Clear to send
   if (flags & EUSCI_A_IFG_TXIFG) {
     if(tx_fifo.count) {
+      // Send next character, keep interrupt active
       fifo_pop(&tx_fifo, &val);
       EUSCI_A0->TXBUF = val;
     } else {
-      // clear flag manually since not sending
-      EUSCI_A0->IFG &= ~(EUSCI_A_IFG_TXIFG);
+      // fifo empty, disable tx interrupt
+      EUSCI_A0->IE &= ~EUSCI_A_IE_TXIE;
     }
   }
 }
