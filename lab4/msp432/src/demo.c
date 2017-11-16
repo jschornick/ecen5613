@@ -9,8 +9,12 @@
 //
 // Compilation: GCC cross compiler for ARM, v4.9.3+
 // Version    : See GitHub repository jschornick/ecen5613 for revision details
+//
+// Attribution: ADC initialization based on code from TI Rersource Explorer
+// examples as indicated.
 
 #include <stdint.h>
+#include <stdio.h>  // sprintf
 #include "uart.h"
 #include "msp432p401r.h"
 
@@ -103,9 +107,31 @@ void pwm_init(void)
   TIMER_A0->CCTL[3] = TIMER_A_CCTLN_OUTMOD_7;
 }
 
+// NOTE: initialization based on TI Resource explorer example mps432p401x_adc14_01
+void adc_init(void)
+{
+  // CTL0_SHP : sample-and-hold pulse source = sampling timer
+  // CTL0_SHT0: sample-and-hold = 16 ADC clock cycles
+  // CTL0_ON  : ADC will be powered during conversion
+  ADC14->CTL0 = ADC14_CTL0_SHT0_2 | ADC14_CTL0_SHP | ADC14_CTL0_ON;
+
+  ADC14->CTL1 = ADC14_CTL1_RES_3;        // 14-bit conversion results
+
+  ADC14->MCTL[0] |= ADC14_MCTLN_INCH_1;  // MEM[0] input = A1, AVCC/AVSS refs
+  ADC14->IER0 |= ADC14_IER0_IE0;         // Interrupt on conversion complete
+
+  __NVIC_EnableIRQ(ADC14_IRQn);
+}
+
+
 volatile uint8_t S1_FLAG;
 volatile uint8_t S2_FLAG;
 volatile uint16_t red = 0;
+
+char str[20];
+
+volatile uint8_t adc_flag = 0;
+volatile uint16_t adc_val = 0;
 
 int main(void) {
 
@@ -120,6 +146,7 @@ int main(void) {
   button_init();
   pwm_init();
   uart_init();
+  adc_init();
 
   __enable_irq();
 
@@ -135,14 +162,20 @@ int main(void) {
   S2_FLAG = 0;
   while(1) {
     if(S1_FLAG) {
-      //uart_queue('1');
-      uart_queue_str("B1");
+      uart_queue_str("B1: sample\r\n");
+      // Enable and start ADC conversion
+      ADC14->CTL0 |= ADC14_CTL0_ENC | ADC14_CTL0_SC;
       S1_FLAG=0;
     }
     if(S2_FLAG) {
-      //uart_queue('2');
-      uart_queue_str("B2");
+      uart_queue_str("B2\r\n");
       S2_FLAG=0;
+    }
+
+    if (adc_flag) {
+      sprintf(str, "ADC: %u\r\n", adc_val);
+      uart_queue_str(str);
+      adc_flag = 0;
     }
 
     // Pop received characters off the FIFO and echo back
@@ -154,10 +187,6 @@ int main(void) {
     P1->OUT &= ~BIT0; // turn off
     __sleep();
     P1->OUT |= BIT0; // turn on
-
-    //uart_queue('.'); // wakeup indicator and delay to avoid cascading interrupts
-    //uint16_t i;
-    //for(i=0;i<50;i++);
 
   };
 }
@@ -191,3 +220,9 @@ void PORT1_IRQHandler(void)
 }
 
 
+// ADC14 interrupt service routine
+void ADC14_IRQHandler(void)
+{
+  adc_val = ADC14->MEM[0];
+  adc_flag = 1;
+}
