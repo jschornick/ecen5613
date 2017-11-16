@@ -54,6 +54,7 @@ void timer_init(void)
   // capture control interrupt enable (CCIFG set when TA0R counts to CCR0)
   TIMER_A1->CCTL[0] |= TIMER_A_CCTLN_CCIE;
   TIMER_A1->CCR[0] = 32767;  // once per second for blink
+  //TIMER_A1->CCR[0] = 3277;  // ~10Hz
 
   // enable interrupt associated with CCR0 match
   __NVIC_EnableIRQ(TA1_0_IRQn);
@@ -67,11 +68,12 @@ void button_init(void)
 {
   P1->DIR &= ~(BIT1 | BIT4); // input
   P1->OUT |= BIT1 | BIT4; // pull up (vs pull down)
-  P1->REN |= BIT1 | BIT4; // enable pull up
+  P1->REN |= BIT1 | BIT4; // enable pulling (up)
   P1->IES |= BIT1 | BIT4; // high-to-low edge select
-  P1->IE |= BIT1 | BIT4;  // interrupt enabled
 
   P1->IFG &= ~(BIT1 | BIT4);
+  P1->IE |= BIT1 | BIT4;  // interrupt enabled
+
   __NVIC_EnableIRQ(PORT1_IRQn);
 }
 
@@ -101,13 +103,9 @@ void pwm_init(void)
   TIMER_A0->CCTL[3] = TIMER_A_CCTLN_OUTMOD_7;
 }
 
-volatile uint8_t S1_FLAG = 0;
-volatile uint8_t S2_FLAG = 0;
-
-uint16_t red = 0;
-uint16_t green = 0x5555;
-uint16_t blue = 0xAAAA;
-int16_t speed = 1;
+volatile uint8_t S1_FLAG;
+volatile uint8_t S2_FLAG;
+volatile uint16_t red = 0;
 
 int main(void) {
 
@@ -125,25 +123,27 @@ int main(void) {
 
   __enable_irq();
 
+  // Wake up on exit from ISR
+  SCB->SCR &= ~SCB_SCR_SLEEPONEXIT_Msk;
+  //__DSB();  // TI examples use this... why?
+
   uart_queue_str("\r\nA long welcome message to test the FIFO!\r\n");
   uart_queue('-');
   uart_queue('>');
+
+  S1_FLAG = 0;
+  S2_FLAG = 0;
   while(1) {
     if(S1_FLAG) {
-      uart_queue('1');
+      //uart_queue('1');
+      uart_queue_str("B1");
       S1_FLAG=0;
     }
     if(S2_FLAG) {
-      uart_queue('2');
+      //uart_queue('2');
+      uart_queue_str("B2");
       S2_FLAG=0;
     }
-
-    // Set new color
-    //   RGB intensities above 2^15 are aliased to (2^16 - value) to make
-    //   a smooth transition when the 16-bit value rolls over
-    /* TIMER_A0->CCR[1] = (red < 1<<15) ? (red >> 11) : (0xffff-red) >> 11; */
-    /* TIMER_A0->CCR[2] = (green < 1<<15) ? (green >> 11) : (0xffff-green) >> 11; */
-    /* TIMER_A0->CCR[3] = (blue < 1<<15) ? (blue >> 11) : (0xffff-blue) >> 11; */
 
     // Pop received characters off the FIFO and echo back
     while(rx_fifo.count) {
@@ -151,7 +151,13 @@ int main(void) {
       uart_queue(c);
     }
 
+    P1->OUT &= ~BIT0; // turn off
+    __sleep();
+    P1->OUT |= BIT0; // turn on
 
+    //uart_queue('.'); // wakeup indicator and delay to avoid cascading interrupts
+    //uint16_t i;
+    //for(i=0;i<50;i++);
 
   };
 }
@@ -163,7 +169,10 @@ void TA1_0_IRQHandler(void)
   // reset timer interrupt flag
   TIMER_A1->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
   // toggle LED1
-  P1->OUT ^= BIT0;
+  //P1->OUT ^= BIT0;
+
+  red += 0x4000;
+  TIMER_A0->CCR[1] = (red < 1<<15) ? (red >> 11) : (0xffff-red) >> 11;
 }
 
 // Interrupt handler for Port 1 (buttons)
