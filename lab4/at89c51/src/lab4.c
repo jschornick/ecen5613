@@ -79,15 +79,25 @@ volatile uint8_t clock_mins; // clock minutes, BCD format
 #define IO_EXP_BUTTON  0  /* P0 */
 #define IO_EXP_LED     1  /* P1 */
 
+// Funciton: init_clock
+//
+// Initialize the clock by resetting the counters and initializing Timer 2 to
+// interrupt every 50ms.
 void init_clock(void)
 {
-  // Set GPIO for clock control to be an input
+  // Set GPIO for clock control to be an input, reading JP1
   CLOCK_CTL = 1;
+
+  // Reset all counters
   clock_ticks = 0;
   clock_secs = 0;
   clock_mins = 0;
+
+  // Timer 2 will interrupt every 50ms. This is twice the required 0.1s
+  // resolution, but is as slow as we can get with a 16-bit timer
   timer2_init();
-  clock_run = 1; // run clock
+
+  clock_run = 1; // run clock (unless gated by JP1)
 }
 
 // Function: dump_screen
@@ -644,7 +654,10 @@ void cmd_load(void)
   printf("done!\r\n");
 }
 
-
+// Function: display_status
+//
+// Display a sumamry of key system variables, specifically clock status and
+// the state of the I/O expander.
 void display_status(void)
 {
   uint8_t io_pins;
@@ -682,6 +695,7 @@ void display_status(void)
 
   printf( "\r\n");
 }
+
 
 // Function: display_menu
 //
@@ -815,6 +829,16 @@ void main()
 }
 
 
+// Function: timer2_isr
+//
+// Interrupt service routine for Timer 2.
+//
+// Timer 2 interrupts every 50ms, representing a 1/20s clock tick. Ticks are
+// only incremented if the clock is enabled in both software and hardware.
+//
+// The LCD is modified, but the address is restored before exit. However, CGRAM
+// accesses must still be handled as a critical section, due to the ambigious
+// LCD addressing scheme.
 void timer2_isr(void) __interrupt (INTR_TIMER2)
 {
   uint8_t lcd_addr;
@@ -847,8 +871,9 @@ void timer2_isr(void) __interrupt (INTR_TIMER2)
       clock_mins = 0; // reset
     }
 
+    // Print human-readable time to bottom right of LCD
     if( (clock_ticks & 0x01) == 0 ) {
-      lcd_addr = lcd_getaddr();
+      lcd_addr = lcd_getaddr();  // save LCD address before changing
       lcd_gotoxy(3,3);
       lcd_putstr("Time: ");
       lcd_putchar('0' + (clock_mins>>4));
@@ -858,12 +883,19 @@ void timer2_isr(void) __interrupt (INTR_TIMER2)
       lcd_putchar('0' + (clock_secs&0xf));
       lcd_putchar('.');
       lcd_putchar('0' + (clock_ticks>>1));
-      lcd_gotoaddr(lcd_addr);
+      lcd_gotoaddr(lcd_addr);  // restore LCD address before returning
     }
   }
 }
 
 
+// Function: int0_isr
+//
+// External INT0 interrupt service routine.
+//
+// The interrupt is generated when the I/O expander detects a change in
+// inputs. The button pin is rechecked and used to set the appropriate LED pin
+// state.
 void int0_isr(void) __interrupt (INTR_EXT0)
 {
   // flag is automatically cleared by hardware
