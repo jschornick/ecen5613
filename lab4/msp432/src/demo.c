@@ -57,8 +57,8 @@ void timer_init(void)
 
   // capture control interrupt enable (CCIFG set when TA0R counts to CCR0)
   TIMER_A1->CCTL[0] |= TIMER_A_CCTLN_CCIE;
-  TIMER_A1->CCR[0] = 32767;  // once per second for blink
-  //TIMER_A1->CCR[0] = 3277;  // ~10Hz
+  //TIMER_A1->CCR[0] = 32767;  // once per second for blink
+  TIMER_A1->CCR[0] = 3277;  // ~10 Hz
 
   // enable interrupt associated with CCR0 match
   __NVIC_EnableIRQ(TA1_0_IRQn);
@@ -107,13 +107,16 @@ void pwm_init(void)
   TIMER_A0->CCTL[3] = TIMER_A_CCTLN_OUTMOD_7;
 }
 
+#define ADC_MAX 0x3FFF  /* 14-bit mode */
+#define ADC_REF 3.3     /* AVCC = VCC = 3.3V */
+
 // NOTE: initialization based on TI Resource explorer example mps432p401x_adc14_01
 void adc_init(void)
 {
-  // CTL0_SHP : sample-and-hold pulse source = sampling timer
-  // CTL0_SHT0: sample-and-hold = 16 ADC clock cycles
+  // CTL0_SHP : sample-and-hold: pulse source = sampling timer
+  // CTL0_SHT0: sample-and-hold: SHT0_3 = 32 ADC clock cycles
   // CTL0_ON  : ADC will be powered during conversion
-  ADC14->CTL0 = ADC14_CTL0_SHT0_2 | ADC14_CTL0_SHP | ADC14_CTL0_ON;
+  ADC14->CTL0 = ADC14_CTL0_SHT0_3 | ADC14_CTL0_SHP | ADC14_CTL0_ON;
 
   ADC14->CTL1 = ADC14_CTL1_RES_3;        // 14-bit conversion results
 
@@ -124,9 +127,41 @@ void adc_init(void)
 }
 
 
+// REFVSEL: voltage reference select, REFCTL0 [5..4]
+#define VREF_1_2   0x0  /* 1.2V  */
+#define VREF_1_45  0x1  /* 1.45V */
+#define VREF_2_5   0x3  /* 2.5V  */
+
+uint8_t vref_mode;
+
+// Function: set_vref
+//
+// Sets the voltage reference to a new voltage value
+void set_vref(uint8_t mode)
+{
+  REF_A->CTL0 &= ~(REF_A_CTL0_VSEL_MASK);      // clear existing voltage setting
+  REF_A->CTL0 |= (mode<<REF_A_CTL0_VSEL_OFS);  // set new voltage mode
+  while (REF_A->CTL0 & REF_A_CTL0_GENBUSY);    // wait until reference is ready
+  vref_mode = mode;
+}
+
+// Function: vref_init
+//
+// Initializes the voltage reference on P5.6
+void vref_init(void)
+{
+  // P5.6 analog mode (voltage reference)
+  P5->SEL0 |= BIT6;
+  P5->SEL1 |= BIT6;
+
+  REF_A->CTL0 |= REF_A_CTL0_ON;   // turn on reference module
+  REF_A->CTL0 |= REF_A_CTL0_OUT;  // and output to external pin
+  set_vref(VREF_1_2);
+}
+
 volatile uint8_t S1_FLAG;
 volatile uint8_t S2_FLAG;
-volatile uint16_t red = 0;
+volatile uint16_t heartbeat = 0;
 
 char str[20];
 
@@ -147,6 +182,7 @@ int main(void) {
   pwm_init();
   uart_init();
   adc_init();
+  vref_init();
 
   __enable_irq();
 
@@ -154,26 +190,38 @@ int main(void) {
   SCB->SCR &= ~SCB_SCR_SLEEPONEXIT_Msk;
   //__DSB();  // TI examples use this... why?
 
-  uart_queue_str("\r\nA long welcome message to test the FIFO!\r\n");
-  uart_queue('-');
-  uart_queue('>');
+  uart_queue_str("\r\nWelcome to the last ECEN5613 Lab!\r\n");
 
   S1_FLAG = 0;
   S2_FLAG = 0;
   while(1) {
     if(S1_FLAG) {
-      uart_queue_str("B1: sample\r\n");
+      uart_queue_str("B1: request ADC conversion\r\n");
       // Enable and start ADC conversion
       ADC14->CTL0 |= ADC14_CTL0_ENC | ADC14_CTL0_SC;
       S1_FLAG=0;
     }
     if(S2_FLAG) {
-      uart_queue_str("B2\r\n");
+      uart_queue_str("B2: change VREF\r\n");
+      switch(vref_mode) {
+        case VREF_1_2:
+          set_vref(VREF_1_45);
+          uart_queue_str("VREF: 1.45V\r\n");
+          break;
+        case VREF_1_45:
+          set_vref(VREF_2_5);
+          uart_queue_str("VREF: 2.5V\r\n");
+          break;
+        case VREF_2_5:
+          set_vref(VREF_1_2);
+          uart_queue_str("VREF: 1.2V\r\n");
+          break;
+      }
       S2_FLAG=0;
     }
 
     if (adc_flag) {
-      sprintf(str, "ADC: %u\r\n", adc_val);
+      sprintf(str, "ADC: %u (%0.3fV)\r\n", adc_val, ADC_REF * adc_val / (ADC_MAX+1) );
       uart_queue_str(str);
       adc_flag = 0;
     }
@@ -200,8 +248,10 @@ void TA1_0_IRQHandler(void)
   // toggle LED1
   //P1->OUT ^= BIT0;
 
-  red += 0x4000;
-  TIMER_A0->CCR[1] = (red < 1<<15) ? (red >> 11) : (0xffff-red) >> 11;
+  heartbeat += 0x1000;
+  // Rescale the linear heartbeat value to rise and fall
+  //TIMER_A0->CCR[1] = (heartbeat < 1<<15) ? (heartbeat >> 11) : (0xffff-heartbeat) >> 11;
+  TIMER_A0->CCR[2] = (heartbeat < 1<<15) ? (heartbeat >> 11) : (0xffff-heartbeat) >> 11;
 }
 
 // Interrupt handler for Port 1 (buttons)
