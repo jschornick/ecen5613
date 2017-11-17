@@ -1,11 +1,15 @@
 // File       : demo.c
 // Author     : Jeff Schornick
 //
-// Lab 3 demo of MSP432 features.
+// Lab 4 demo of MSP432 features.
 //
 // Includes reading buttons via GPIO interrupts, basic timer interrupts,
 // GPIO-based LED control, PWM-based control of the RGB LED, and an FIFO-based
 // UART driver using interrupts.
+//
+// Also includes a simple ADC/VREF demonstration. By externally connecting
+// P5.4(A1) to P5.6(VREF), the ADC can be used to read the various voltages
+// produced by the voltage reference.
 //
 // Compilation: GCC cross compiler for ARM, v4.9.3+
 // Version    : See GitHub repository jschornick/ecen5613 for revision details

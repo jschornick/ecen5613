@@ -23,7 +23,7 @@ C_FLAGS    += -std=c99
 C_FLAGS    += -mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mthumb
 C_FLAGS    += -O0
 C_FLAGS    += -Wall -Werror
-C_FLAGS    += -g -gstrict-dwarf
+C_FLAGS    += -g3 -gstrict-dwarf
 C_FLAGS    += -ffunction-sections -fdata-sections
 #C_FLAGS    += -MD
 
