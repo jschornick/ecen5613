@@ -1,7 +1,7 @@
 // File       : lab4.c
 // Author     : Jeff Schornick
 //
-// Implements the required functionality for ECEN5613 Lab 4.
+// Implements the required and supplemental functionality for ECEN5613 Lab 4.
 //
 // Specifically, this program presents a menu over serial which
 // can be used to interact with the LCD and I2C EEPROM.
@@ -12,8 +12,11 @@
 // EEPROM features include reading and writing of individual bytes, as well
 // as dumping a memory range.
 //
-// Two final commands allow the LCD RAM to be saved to EEPROM and reloaed
+// Two additional commands allow the LCD RAM to be saved to EEPROM and reloaed
 // at a later time.
+//
+// A real-time clock runs in the background, and can be controlled via the
+// menu or a hardware jumper (JP1).
 //
 // Compilation: Supports SDCC v3.6+, see included makefile for invocation
 // Version    : See GitHub repository jschornick/ecen5613 for revision details

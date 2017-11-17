@@ -107,10 +107,15 @@ void pwm_init(void)
   TIMER_A0->CCTL[3] = TIMER_A_CCTLN_OUTMOD_7;
 }
 
+
 #define ADC_MAX 0x3FFF  /* 14-bit mode */
 #define ADC_REF 3.3     /* AVCC = VCC = 3.3V */
 
-// NOTE: initialization based on TI Resource explorer example mps432p401x_adc14_01
+// Function: adc_initializes
+//
+// Initializes the ADC in 14-bit single shot mode, reading from external pin A1.
+//
+// NOTE: Initialization based on TI Resource explorer example mps432p401x_adc14_01
 void adc_init(void)
 {
   // CTL0_SHP : sample-and-hold: pulse source = sampling timer
@@ -159,14 +164,17 @@ void vref_init(void)
   set_vref(VREF_1_2);
 }
 
+
+// Button flags that may be set during GPIO interrupt
 volatile uint8_t S1_FLAG;
 volatile uint8_t S2_FLAG;
-volatile uint16_t heartbeat = 0;
 
-char str[20];
+volatile uint16_t heartbeat = 0; // pulsing heartbeat, updated by timer ISR
 
-volatile uint8_t adc_flag = 0;
-volatile uint16_t adc_val = 0;
+volatile uint8_t adc_flag = 0;   // adc complete flag, set in ADC ISR
+volatile uint16_t adc_val = 0;   // adc reading, set in ADC ISR
+char str[20];  // temporary string for float conversions
+
 
 int main(void) {
 
@@ -188,7 +196,6 @@ int main(void) {
 
   // Wake up on exit from ISR
   SCB->SCR &= ~SCB_SCR_SLEEPONEXIT_Msk;
-  //__DSB();  // TI examples use this... why?
 
   uart_queue_str("\r\nWelcome to the last ECEN5613 Lab!\r\n");
 
@@ -245,12 +252,9 @@ void TA1_0_IRQHandler(void)
 {
   // reset timer interrupt flag
   TIMER_A1->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
-  // toggle LED1
-  //P1->OUT ^= BIT0;
 
-  heartbeat += 0x1000;
+  heartbeat += 0x1000;  // intensity change
   // Rescale the linear heartbeat value to rise and fall
-  //TIMER_A0->CCR[1] = (heartbeat < 1<<15) ? (heartbeat >> 11) : (0xffff-heartbeat) >> 11;
   TIMER_A0->CCR[2] = (heartbeat < 1<<15) ? (heartbeat >> 11) : (0xffff-heartbeat) >> 11;
 }
 
@@ -259,8 +263,7 @@ void PORT1_IRQHandler(void)
 {
   // check if it was S1 or S2
   if (P1->IFG & BIT1) {
-    // clear interrupt flag
-    P1->IFG &= ~BIT1;
+    P1->IFG &= ~BIT1; // clear interrupt flag
     S1_FLAG = 1;
   }
   if (P1->IFG & BIT4) {
@@ -271,8 +274,10 @@ void PORT1_IRQHandler(void)
 
 
 // ADC14 interrupt service routine
+//
+// Read the ADC value, set a flag for the main loop to print the result
 void ADC14_IRQHandler(void)
 {
-  adc_val = ADC14->MEM[0];
+  adc_val = ADC14->MEM[0];  // read and clear interrupt
   adc_flag = 1;
 }
